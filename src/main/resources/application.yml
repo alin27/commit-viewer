@@ -1,0 +1,14 @@
+spring:
+  data:
+    mongodb:
+      host: localhost
+      database: git-projects
+
+---
+spring:
+  profiles:
+    active: docker
+  data:
+    mongodb:
+      host: mongodb
+      database: git-projects
