@@ -1,5 +1,6 @@
 package codacy.com.commitviewer.domain;
 
+import codacy.com.commitviewer.util.CommitOption;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,26 +15,9 @@ import java.util.Optional;
 /**
  * POJO representing a git project. When parsed as request body in post request, the user may optionally include a list
  * of commit options for querying specific information about the commits. If the option is present, it will be queried
- * when the git CLI is run.
+ * when the git CLI is run. See {@link CommitOption} for the full list of available options.
  *
- * An example of 'commitOptions': [ sha, url, author.email, author.date, committer.name, title, message...].
- *
- * The available options are:
- *
- * sha
- * author.date
- * author.name
- * author.email
- * committer.date
- * committer.name
- * committer.email
- * message
- * tree.sha
- * parents.sha
- * validation.verified
- * validation.reason
- * validation.signature
- * validation.payload
+ * An example of {@link CommitOption}: [ SHA, URL, AUTHOR_EMAIL, AUTHOR_DATE, COMMITTER_NAME, MESSAGE...].
  *
  * Author: Amy Lin
  **/
@@ -48,7 +32,7 @@ public class Project {
     private String id;
     private String owner;
     private String name;
-    private String url;
+    private String directory;
     private List<Commit> commitList;
-    private List<String> commitOptions;
+    private List<CommitOption> commitOptionList;
 }

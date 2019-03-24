@@ -4,6 +4,7 @@ import codacy.com.commitviewer.domain.Commit;
 import codacy.com.commitviewer.domain.Project;
 import codacy.com.commitviewer.exception.ProjectNotFoundException;
 
+import java.net.MalformedURLException;
 import java.util.List;
 
 public interface ProjectService {
@@ -46,7 +47,8 @@ public interface ProjectService {
     List<Project> getProjectsByOwner(String owner);
 
 
-    /** Update an existing git repository with new information. In NoSQL this operation is equivalent to 'createProject'.
+    /**
+     * Update an existing git repository with new information. In NoSQL this operation is equivalent to 'createProject'.
      *
      * @param project Project
      * @return {@link Project} with unique ID to be created in the database
@@ -76,8 +78,10 @@ public interface ProjectService {
     /**
      * Retrieve a list of {@link Commit} of a project from the database.
      *
-     * @param url String git url of the {@link Project}
+     * @param owner String git owner of the {@link Project}
+     * @param name  String git name of the {@link Project}
      * @return List of {@link Commit} of the project
      */
-    List<Commit> getAllCommitsByProjectUrl(String url) throws ProjectNotFoundException;
+    List<Commit> getAllCommitsByProjectNameFromGit(String owner, String name) throws ProjectNotFoundException, MalformedURLException;
+
 }

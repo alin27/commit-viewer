@@ -2,6 +2,7 @@ package codacy.com.commitviewer.util;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,11 +32,21 @@ public class GitUtilTest {
 
     @Test
     public void buildCommitOptionStringShouldBuildCorrectlyWhenOptionsArePresent(){
+        // SHA | message
         List<String> expectedCommands = Arrays.asList("git", "log", "--pretty=format:\"%H|%N\"");
         List<CommitOption> commitOptionList = Arrays.asList(CommitOption.SHA, CommitOption.MESSAGE);
-        assertEquals(3, GitUtil.buildCommandList(commitOptionList).size());
-        assertEquals(expectedCommands, GitUtil.buildCommandList(commitOptionList));
+        assertEquals(3, GitUtil.buildGitCommandList(commitOptionList).size());
+        assertEquals(expectedCommands, GitUtil.buildGitCommandList(commitOptionList));
     }
+
+    @Test
+    public void buildCommitOptionStringShouldBuildDefaultWhenNoOptionsArePresent(){
+        List<String> expectedCommands = Arrays.asList("git", "log", "--pretty=format:\"%H|%an|%ae|%at|%N\"");
+        List<CommitOption> commitOptionList = new ArrayList<>();
+        assertEquals(3, GitUtil.buildGitCommandList(commitOptionList).size());
+        assertEquals(expectedCommands, GitUtil.buildGitCommandList(commitOptionList));
+    }
+
 
     @Test
     public void test(){

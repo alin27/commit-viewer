@@ -3,13 +3,12 @@ package codacy.com.commitviewer.util;
 import codacy.com.commitviewer.domain.Commit;
 import codacy.com.commitviewer.domain.CommitAttribute;
 import codacy.com.commitviewer.domain.commit.User;
-import codacy.com.commitviewer.exception.FailToExecuteBashCommandException;
+import codacy.com.commitviewer.exception.FailToExitProcessException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -27,13 +26,12 @@ public class GitUtil {
     private static final String GIT_LOG_PRETTY_FORMAT_BASE_CMD = "--pretty=format:\"%s\"";
     private static final String COMMIT_FIELD_DELIMITER = "|";
 
-    List<String> getRawCommitData(String execDirectory, List<CommitOption> commitOptionList) {
+    public List<String> getRawCommitData(String execDirectory, List<CommitOption> commitOptionList) {
         List<String> rawCommitDataStringList = new ArrayList<>();
         List<String> rawErrorStringList = new ArrayList<>();
 
         try {
-            File execDirectoryFile = new File(execDirectory);
-            ProcessBuilder builder = initialiseProcessBuilder(execDirectoryFile, commitOptionList);
+            ProcessBuilder builder = initialiseProcessBuilder(new File(execDirectory), commitOptionList);
             Process process = builder.start();
 
             BufferedReader processOutput = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -52,43 +50,48 @@ public class GitUtil {
             int exitCode = process.waitFor();
 
             if (!executedSuccessfully(exitCode)) {
-                //TODO: turn error stream into string
-                String error = "some error";
-                throw new FailToExecuteBashCommandException("Unable to execute bash command. Error: '" + error
-                        + "'. Exit code: " + exitCode);
+                String error = buildErrorStringFromStream(rawErrorStringList);
+                throw new FailToExitProcessException("The process started but was unable to exit successfully (exit " +
+                        "code: " + exitCode + ". Error occured during the process: " + error);
             }
 
             process.destroy();
 
         } catch (Exception e) {
-            // Thrown by 'new File <execDirectory>'
-            if (e instanceof FileNotFoundException) {
-                //TODO: handle file not found exception (invalid exec dir)
-                log.error("Unable to find the execution directory specified (" + execDirectory + "), ensure the " +
-                        "directory exits.");
+            // Thrown by opening the directory specified
+            if (e instanceof IOException) {
+                log.error("Unable to access the execution directory specified (" + execDirectory + "), ensure the " +
+                        "directory exits and is accessible. Error: " + e.getMessage());
             }
 
-            // Thrown by 'ProcessBuilder.start()'
-            else if (e instanceof IOException) {
-                // TODO: handle IO exception  (thrown by builder.start)
-                log.error("Unable to start the process.");
-            } else if (e instanceof InterruptedException) {
-                // TODO: handle interrupted exception (thrown by process.waitFor)
-                log.error("");
-            } else if (e instanceof FailToExecuteBashCommandException) {
-                // TODO: handle bach command fail exception
-                log.error("");
+            // Thrown by 'Process.waitFor()'
+            else if (e instanceof InterruptedException) {
+                log.error("The current thread is interrupted by another thread while the bash command runs. Error: " +
+                        e.getMessage());
+
+            } else if (e instanceof FailToExitProcessException) {
+                log.error("Unable to exit the process. Error: " + e.getMessage());
             } else {
-                //TODO: handle generic exption
-                log.error("");
+                log.error("Unable to execute the git CLI command. Error: " + e.getMessage() + ". Skipping...");
             }
         }
 
         return rawCommitDataStringList;
     }
 
+    public String buildErrorStringFromStream(List<String> rawErrorStringList) {
+        StringBuilder errorStringBuilder = new StringBuilder();
+
+        for (String errorString : rawErrorStringList) {
+            errorStringBuilder.append(errorString);
+            errorStringBuilder.append(" ");
+        }
+
+        return errorStringBuilder.toString();
+    }
+
     //TODO: expand this to populate other fields of Commit
-    List<Commit> buildCommitList(List<String> rawCommitData) {
+    public List<Commit> buildCommitList(List<String> rawCommitData) {
         List<Commit> commitList = new ArrayList<>();
         for (String commitData : rawCommitData) {
             // SHA | author name | author email | author date | message
@@ -139,29 +142,31 @@ public class GitUtil {
         ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream(true);
         builder.directory(execDirectoryFile);
-        builder.command(buildCommandList(commitOptionList));
+        builder.command(buildGitCommandList(commitOptionList));
         return builder;
     }
 
-    List<String> buildCommandList(List<CommitOption> commitOptionList) {
+    List<String> buildGitCommandList(List<CommitOption> commitOptionList) {
         List<String> commandList = new ArrayList<>(Arrays.asList(GIT_LOG_BASE_CMD.split(" ")));
-        StringBuilder commitOptions = new StringBuilder();
+        String commitOptions = "";
 
         if (commitOptionList == null || commitOptionList.isEmpty()) {
             log.info("No commit option specified, querying default commit data (sha, author name, author " +
                     "email, author date and message)");
-            commitOptions.append(buildDefaultCommitOptionString());
+            commitOptions = buildDefaultCommitOptionString();
 
         } else {
+            List<String> commandOptionStringList = new ArrayList<>();
             for (CommitOption commitOption : commitOptionList) {
                 if (COMMIT_OPTION_TAG_MAP.containsKey(commitOption)) {
-                    commitOptions.append(COMMIT_OPTION_TAG_MAP.get(commitOption));
-                    commitOptions.append(COMMIT_FIELD_DELIMITER);
+                    commandOptionStringList.add(COMMIT_OPTION_TAG_MAP.get(commitOption));
                 } else {
                     log.warn("Commit option specified '" + commitOption + "' does not match any valid tag that can be " +
                             "used by git log --pretty=format. Skipping...");
                 }
             }
+
+            commitOptions = String.join(COMMIT_FIELD_DELIMITER, commandOptionStringList);
         }
         String commitOptionString = String.format(GIT_LOG_PRETTY_FORMAT_BASE_CMD, commitOptions);
         commandList.add(commitOptionString);

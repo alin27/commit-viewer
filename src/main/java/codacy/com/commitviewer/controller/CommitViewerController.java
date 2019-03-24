@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @CrossOrigin
@@ -112,19 +113,29 @@ public class CommitViewerController {
     }
 
     /**
-     * Retrieve a list of {@link Commit} of a project by project git url via a GET request.
+     *
      *
      * @return ResponseEntity with HTTP status code and list of {@link Commit} in the response body
      */
-    @GetMapping("/project/{url}/commits")
-    public ResponseEntity getCommitsByProjectUrl(@PathVariable final String url) {
+    @GetMapping("/owner/{owner}/project/{name}/commits")
+    public ResponseEntity getCommitsByOwnerAndProjectName(@PathVariable final String owner, @PathVariable final String name) {
         try {
-            return new ResponseEntity<>(projectService.getAllCommitsByProjectUrl(url), HttpStatus.OK);
+            return new ResponseEntity<>(projectService.getAllCommitsByProjectNameFromGit(owner, name), HttpStatus.OK);
         } catch (final Exception e) {
             if (e instanceof ProjectNotFoundException) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
+            /*
+                else if ( 404 ) {
+                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                }
+
+                else( any other git API error) {
+                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+
+             */
             else {
                 // TODO: throw general run time error
                 return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

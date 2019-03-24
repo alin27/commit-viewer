@@ -5,9 +5,9 @@ package codacy.com.commitviewer.exception;
  * <p>
  * Author: Amy Lin
  **/
-public class FailToExecuteBashCommandException extends Exception {
+public class GitHubTimeoutException extends Exception {
 
-    public FailToExecuteBashCommandException(final String errorMessage) {
+    public GitHubTimeoutException(final String errorMessage) {
         super(errorMessage);
     }
 }
