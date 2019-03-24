@@ -4,3 +4,6 @@ services:
     image: mongo:latest
     container_name: commit-viwer-mongodb
     restart: always
+    command: --smallfiles
+    ports:
+      - 27017:27017

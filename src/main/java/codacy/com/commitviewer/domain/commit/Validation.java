@@ -1,5 +1,6 @@
-package codacy.com.commitviewer.domain;
+package codacy.com.commitviewer.domain.commit;
 
+import codacy.com.commitviewer.domain.CommitAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,10 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.List;
-
 /**
- * POJO representing a git commit.
+ * POJO representing the 'validation' attribute of a git commit.
  * <p>
  * Author: Amy Lin
  **/
@@ -20,13 +19,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GitCommit {
-
-    private String sha;
-    private String url;
-    private GitUser author;
-    private GitUser committer;
-    private String message;
-    private GitTree tree;
-    private List<GitTree> parents;
+public class Validation {
+    private CommitAttribute verified;
+    private CommitAttribute reason;
+    private CommitAttribute signature;
+    private CommitAttribute payload;
 }

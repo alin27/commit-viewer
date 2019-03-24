@@ -1,5 +1,6 @@
 package codacy.com.commitviewer.service;
 
+import codacy.com.commitviewer.domain.Commit;
 import codacy.com.commitviewer.domain.Project;
 import codacy.com.commitviewer.exception.ProjectNotFoundException;
 
@@ -8,10 +9,10 @@ import java.util.List;
 public interface ProjectService {
 
     /**
-     * @param gitProject Git project data received from the git cli
+     * @param project Git project data received from the git cli
      * @return {@link Project} with unique ID to be created in the database
      */
-    Project createProject(Project gitProject);
+    Project createProject(Project project);
 
     /**
      * Retrieve a git project by ID from the database.
@@ -47,10 +48,10 @@ public interface ProjectService {
 
     /** Update an existing git repository with new information. In NoSQL this operation is equivalent to 'createProject'.
      *
-     * @param gitProject Project
+     * @param project Project
      * @return {@link Project} with unique ID to be created in the database
      */
-    Project updateProject(Project gitProject);
+    Project updateProject(Project project);
 
     /**
      * Retrieve a list of {@link Project} existing git repositories from the database.
@@ -63,4 +64,20 @@ public interface ProjectService {
      * Delete all {@link Project} stored in the database.
      */
     void deleteAllProjects();
+
+    /**
+     * Retrieve a list of {@link Commit} of a project from the database.
+     *
+     * @param name String name of the {@link Project}
+     * @return List of {@link Commit} of the project
+     */
+    List<Commit> getAllCommitsByProjectName(String name) throws ProjectNotFoundException;
+
+    /**
+     * Retrieve a list of {@link Commit} of a project from the database.
+     *
+     * @param url String git url of the {@link Project}
+     * @return List of {@link Commit} of the project
+     */
+    List<Commit> getAllCommitsByProjectUrl(String url) throws ProjectNotFoundException;
 }

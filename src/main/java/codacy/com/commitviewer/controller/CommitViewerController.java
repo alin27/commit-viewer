@@ -1,5 +1,6 @@
 package codacy.com.commitviewer.controller;
 
+import codacy.com.commitviewer.domain.Commit;
 import codacy.com.commitviewer.domain.Project;
 import codacy.com.commitviewer.exception.ProjectNotFoundException;
 import codacy.com.commitviewer.service.ProjectService;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @AllArgsConstructor
 public class CommitViewerController {
+    // TODO: Provide Swagger doc for the controller
 
     /**
      * Autowired {@link Project} service.
@@ -44,6 +46,80 @@ public class CommitViewerController {
     public ResponseEntity getProjectById(@PathVariable final String id) {
         try {
             return new ResponseEntity<>(projectService.getProjectById(id), HttpStatus.OK);
+        } catch (final Exception e) {
+            if (e instanceof ProjectNotFoundException) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            else {
+                // TODO: throw general run time error
+                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+    }
+
+    /**
+     * Retrieve a single {@link Project} by its git repository name, via a GET request.
+     *
+     * @param name String unique ID assigned by the database upon record creation
+     * @return ResponseEntity with HTTP status code and the {@link Project} that matches the ID in the response body
+     */
+    @GetMapping("/project/{name}")
+    public ResponseEntity getProjectByName(@PathVariable final String name) {
+        try {
+            return new ResponseEntity<>(projectService.getProjectByName(name), HttpStatus.OK);
+        } catch (final Exception e) {
+            if (e instanceof ProjectNotFoundException) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            else {
+                // TODO: throw general run time error
+                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+    }
+
+    /**
+     * Retrieve a list of {@link Commit} of a project by project name via a GET request.
+     *
+     * @return ResponseEntity with HTTP status code and list of {@link Commit} in the response body
+     */
+    @GetMapping("/project/{name}/commits")
+    public ResponseEntity getCommitsByProjectName(@PathVariable final String name) {
+        try {
+            return new ResponseEntity<>(projectService.getAllCommitsByProjectName(name), HttpStatus.OK);
+        } catch (final Exception e) {
+            if (e instanceof ProjectNotFoundException) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            /*
+                else if ( 404 ) {
+                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                }
+
+                else( any other git API error) {
+                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+
+             */
+            else {
+                // TODO: throw general run time error
+                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+    }
+
+    /**
+     * Retrieve a list of {@link Commit} of a project by project git url via a GET request.
+     *
+     * @return ResponseEntity with HTTP status code and list of {@link Commit} in the response body
+     */
+    @GetMapping("/project/{url}/commits")
+    public ResponseEntity getCommitsByProjectUrl(@PathVariable final String url) {
+        try {
+            return new ResponseEntity<>(projectService.getAllCommitsByProjectUrl(url), HttpStatus.OK);
         } catch (final Exception e) {
             if (e instanceof ProjectNotFoundException) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
