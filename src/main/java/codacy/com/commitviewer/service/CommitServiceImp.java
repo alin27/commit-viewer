@@ -16,13 +16,6 @@ import java.util.List;
 public class CommitServiceImp implements CommitService {
 
     @Override
-    public GitCommit buildCommit(final List<String> rawCommitData) {
-        //TODO: expand to handle commit logs that returns different length
-        return null;
-    }
-
-
-    @Override
     public List<String> getRawCommitData(final String execDirectory, List<CommitOption> commitOptionList) {
         List<String> rawCommitData = new ArrayList<>();
 

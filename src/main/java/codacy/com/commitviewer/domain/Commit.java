@@ -12,9 +12,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
- * POJO representing a git commit. The structure is a mirror of a commit object returned by the git API
- * (https://developer.github.com/v3/repos/commits/)
- * <p>
+ * POJO representing the 'commit' attribute of a {@link GitCommit}
+ *
  * Author: Amy Lin
  **/
 @Data

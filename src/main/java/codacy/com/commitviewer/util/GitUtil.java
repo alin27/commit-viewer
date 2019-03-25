@@ -2,7 +2,6 @@ package codacy.com.commitviewer.util;
 
 import codacy.com.commitviewer.domain.Commit;
 import codacy.com.commitviewer.domain.GitCommit;
-import codacy.com.commitviewer.domain.CommitAttribute;
 import codacy.com.commitviewer.domain.commit.User;
 import codacy.com.commitviewer.exception.ProcessExecuteFailedException;
 import lombok.experimental.UtilityClass;
@@ -212,21 +211,6 @@ public class GitUtil {
 
     boolean executedSuccessfully(int exitCode) {
         return exitCode == 0;
-    }
-
-    Map<CommitOption, CommitAttribute> buildCommitOptionMapFromCommitOptionList(List<CommitOption> commitOptionList) {
-        Map<CommitOption, CommitAttribute> map = new HashMap<>();
-
-        for (CommitOption commitOption : commitOptionList) {
-            CommitAttribute attribute = CommitAttribute
-                    .builder()
-                    .cliTag(COMMIT_OPTION_TAG_MAP.get(commitOption))
-                    .build();
-
-            map.put(commitOption, attribute);
-        }
-
-        return map;
     }
 
     Map<CommitOption, String> buildCommitOptionTagMap() {

@@ -1,5 +1,6 @@
 package codacy.com.commitviewer.domain.commit;
 
+import codacy.com.commitviewer.domain.GitCommit;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,8 +9,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
- * POJO representing the 'author' and 'committer' attribute of a git commit.
- * <p>
+ * POJO representing the 'parent' attribute of a {@link GitCommit}
+ *
  * Author: Amy Lin
  **/
 @Data

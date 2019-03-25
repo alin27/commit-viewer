@@ -10,6 +10,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
+/**
+ * POJO representing the a git commit object returned by the git API, as defined in
+ * (https://developer.github.com/v3/repos/commits/)
+ *
+ * Author: Amy Lin
+ **/
 @Data
 @Builder
 @Document

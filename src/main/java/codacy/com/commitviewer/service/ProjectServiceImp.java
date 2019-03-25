@@ -41,16 +41,13 @@ public class ProjectServiceImp implements ProjectService {
 
     private static final String GIT_API_GET_COMMITS_BASE_URL = "https://api.github.com/repos/%s/%s/commits";
 
-
     @Override
     public Project createProject(final Project projectData) {
-        List<GitCommit> commitList = commitService.buildCommitList(projectData.getDirectory(),
-                projectData.getCommitOptionList());
         final Project project = Project.builder()
                 .id(projectData.getId())
                 .name(projectData.getName())
                 .owner(projectData.getOwner())
-                .commitList(commitList)
+                .commitList(projectData.getCommitList())
                 .build();
         return repository.save(project);
     }
@@ -92,12 +89,12 @@ public class ProjectServiceImp implements ProjectService {
         String execDirectory = GitUtil.getValidDirectory(request.getExecDirectory());
         List<CommitOption> commitOptionList = request.getCommitOptions();
 
-        //TODO: Update the record in DB if the repo exists locally already
-        try{
+        //TODO: Write a scheduler to loop through all records in DB to get the latest commits from git
+        try {
             return getAllCommitsByProjectName(request.getProjectName());
         } catch (ProjectNotFoundException e) {
             log.info("Project does not exist in the database, cloning from remote");
-            if(execDirectory != null ){
+            if (execDirectory != null) {
                 log.info("Work directory specified, cloning into '" + execDirectory + "'");
             }
             gitService.clone(execDirectory, projectOwner, projectName);
@@ -123,7 +120,7 @@ public class ProjectServiceImp implements ProjectService {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> response = restTemplate.getForEntity(urlString, String.class);
 
-        if(response.getStatusCode().isError() || response.getStatusCode() == HttpStatus.REQUEST_TIMEOUT){
+        if (response.getStatusCode().isError() || response.getStatusCode() == HttpStatus.REQUEST_TIMEOUT) {
             log.error("Unable to fetch from git hub, trying to retrieve commit list locally...");
             return getAllCommitsFromLocal(request);
         }

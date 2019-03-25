@@ -2,20 +2,11 @@ package codacy.com.commitviewer.service;
 
 import codacy.com.commitviewer.domain.Commit;
 import codacy.com.commitviewer.domain.GitCommit;
-import codacy.com.commitviewer.domain.Project;
 import codacy.com.commitviewer.util.CommitOption;
 
 import java.util.List;
 
 public interface CommitService {
-
-    /**
-     * Create a {@link GitCommit} object based on list of raw commit data.
-     *
-     * @param rawCommitData List of Strings output by git CLI that represent a git commit
-     * @return {@link Project} with unique ID to be created in the database
-     */
-    GitCommit buildCommit(List<String> rawCommitData);
 
     /**
      * Use the git CLI to get a list of commits in a git project directory.
