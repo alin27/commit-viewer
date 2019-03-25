@@ -1,10 +1,14 @@
 package codacy.com.commitviewer.service;
 
 import codacy.com.commitviewer.domain.Commit;
+import codacy.com.commitviewer.domain.GetCommitsRequest;
+import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.Project;
+import codacy.com.commitviewer.exception.GitHubException;
+import codacy.com.commitviewer.exception.GitHubTimeoutException;
 import codacy.com.commitviewer.exception.ProjectNotFoundException;
 
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.util.List;
 
 public interface ProjectService {
@@ -68,20 +72,22 @@ public interface ProjectService {
     void deleteAllProjects();
 
     /**
-     * Retrieve a list of {@link Commit} of a project from the database.
+     * Retrieve a list of {@link GitCommit} of a project from the database.
      *
      * @param name String name of the {@link Project}
-     * @return List of {@link Commit} of the project
+     * @return List of {@link GitCommit} of the project
      */
-    List<Commit> getAllCommitsByProjectName(String name) throws ProjectNotFoundException;
+    List<GitCommit> getAllCommitsByProjectName(String name) throws ProjectNotFoundException;
+
+    List<GitCommit> getAllCommitsFromLocal(GetCommitsRequest request);
 
     /**
-     * Retrieve a list of {@link Commit} of a project from the database.
+     * Retrieve a list of {@link GitCommit} of a project from git. If it fails, it will clone the project to the specified
+     * work directory and try get commits from the project directory.
      *
-     * @param owner String git owner of the {@link Project}
-     * @param name  String git name of the {@link Project}
-     * @return List of {@link Commit} of the project
+     * @param request GetCommitRequest containing the git url, optionally list of commit options and work directory
+     * @return List of {@link GitCommit} of the project
      */
-    List<Commit> getAllCommitsByProjectNameFromGit(String owner, String name) throws ProjectNotFoundException, MalformedURLException;
+    List<GitCommit> getAllCommitsFromGit(GetCommitsRequest request) throws GitHubException, GitHubTimeoutException, IOException;
 
 }

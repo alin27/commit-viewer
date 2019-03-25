@@ -1,9 +1,10 @@
 package codacy.com.commitviewer.util;
 
 import codacy.com.commitviewer.domain.Commit;
+import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.CommitAttribute;
 import codacy.com.commitviewer.domain.commit.User;
-import codacy.com.commitviewer.exception.FailToExitProcessException;
+import codacy.com.commitviewer.exception.ProcessExecuteFailedException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,15 +24,26 @@ public class GitUtil {
 
     private static final Map<CommitOption, String> COMMIT_OPTION_TAG_MAP = buildCommitOptionTagMap();
     private static final String GIT_LOG_BASE_CMD = "git log";
-    private static final String GIT_LOG_PRETTY_FORMAT_BASE_CMD = "--pretty=format:\"%s\"";
-    private static final String COMMIT_FIELD_DELIMITER = "|";
+    private static final String GIT_CLONE_BASE_CMD = "git clone %s %s";
+    private static final String GIT_LOG_PRETTY_FORMAT_BASE_CMD = "--pretty=format:%s";
+    private static final String COMMIT_FIELD_DELIMITER = ",";
+    private static final String GIT_LOG_PRETTY_FORMAT_DEFAULT_PATTERN =
+            "%s" + COMMIT_FIELD_DELIMITER +
+            "%s" + COMMIT_FIELD_DELIMITER +
+            "%s" + COMMIT_FIELD_DELIMITER +
+            "%s" + COMMIT_FIELD_DELIMITER +
+            "%s";
 
-    public List<String> getRawCommitData(String execDirectory, List<CommitOption> commitOptionList) {
-        List<String> rawCommitDataStringList = new ArrayList<>();
+    public List<String> getRawCommitData(String execDirectory, List<CommitOption> commitOptionList) throws ProcessExecuteFailedException {
+        ProcessBuilder builder = initialiseGitLogProcessBuilder(getValidDirectory(execDirectory), commitOptionList);
+        return processExecutor(builder);
+    }
+
+    public List<String> processExecutor(ProcessBuilder builder) throws ProcessExecuteFailedException {
+        List<String> rawDataStringList = new ArrayList<>();
         List<String> rawErrorStringList = new ArrayList<>();
 
         try {
-            ProcessBuilder builder = initialiseProcessBuilder(new File(execDirectory), commitOptionList);
             Process process = builder.start();
 
             BufferedReader processOutput = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -39,7 +51,7 @@ public class GitUtil {
 
             String line;
             while ((line = processOutput.readLine()) != null) {
-                rawCommitDataStringList.add(line);
+                rawDataStringList.add(line);
             }
 
             String errorLine;
@@ -51,32 +63,38 @@ public class GitUtil {
 
             if (!executedSuccessfully(exitCode)) {
                 String error = buildErrorStringFromStream(rawErrorStringList);
-                throw new FailToExitProcessException("The process started but was unable to exit successfully (exit " +
-                        "code: " + exitCode + ". Error occured during the process: " + error);
+                throw new ProcessExecuteFailedException("The process started but was unable to exit successfully (exit " +
+                        "code: " + exitCode + ". Error occurred during the process: " + error);
             }
 
+            log.info("Process executed successfully.");
             process.destroy();
 
         } catch (Exception e) {
             // Thrown by opening the directory specified
             if (e instanceof IOException) {
-                log.error("Unable to access the execution directory specified (" + execDirectory + "), ensure the " +
-                        "directory exits and is accessible. Error: " + e.getMessage());
+                log.error("Unable to access the execution directory specified (" + builder.directory().getName() +
+                        "), ensure the directory exits and is accessible. Error: " + e.getMessage());
+
+                //TODO: write exception in GlobalException handler?
+                throw new ProcessExecuteFailedException("IO_Exception");
             }
 
             // Thrown by 'Process.waitFor()'
             else if (e instanceof InterruptedException) {
                 log.error("The current thread is interrupted by another thread while the bash command runs. Error: " +
                         e.getMessage());
+                throw new ProcessExecuteFailedException("InterruptedException");
 
-            } else if (e instanceof FailToExitProcessException) {
+            } else if (e instanceof ProcessExecuteFailedException) {
                 log.error("Unable to exit the process. Error: " + e.getMessage());
+                throw new ProcessExecuteFailedException("ProcessExecuteFailedException");
             } else {
                 log.error("Unable to execute the git CLI command. Error: " + e.getMessage() + ". Skipping...");
+                throw new ProcessExecuteFailedException("Generic");
             }
         }
-
-        return rawCommitDataStringList;
+        return rawDataStringList;
     }
 
     public String buildErrorStringFromStream(List<String> rawErrorStringList) {
@@ -90,34 +108,19 @@ public class GitUtil {
         return errorStringBuilder.toString();
     }
 
-    //TODO: expand this to populate other fields of Commit
-    public List<Commit> buildCommitList(List<String> rawCommitData) {
-        List<Commit> commitList = new ArrayList<>();
+    //TODO: expand this to populate other fields of GitCommit
+    public List<GitCommit> buildCommitList(List<String> rawCommitData) {
+        List<GitCommit> commitList = new ArrayList<>();
         for (String commitData : rawCommitData) {
             // SHA | author name | author email | author date | message
             String[] commitDataFields = commitData.split(COMMIT_FIELD_DELIMITER);
-            assert commitDataFields.length == 4;
+            assert commitDataFields.length == 5;
 
-            CommitAttribute authorName = CommitAttribute
-                    .builder()
-                    .value(commitDataFields[1])
-                    .build();
-            CommitAttribute authorEmail = CommitAttribute
-                    .builder()
-                    .value(commitDataFields[2])
-                    .build();
-            CommitAttribute authorDate = CommitAttribute
-                    .builder()
-                    .value(commitDataFields[3])
-                    .build();
-            CommitAttribute sha = CommitAttribute
-                    .builder()
-                    .value(commitDataFields[0])
-                    .build();
-            CommitAttribute message = CommitAttribute
-                    .builder()
-                    .value(commitDataFields[5])
-                    .build();
+            String sha = commitDataFields[0];
+            String authorName = commitDataFields[1];
+            String authorEmail = commitDataFields[2];
+            String authorDate = commitDataFields[3];
+            String message = commitDataFields[4];
 
             User author = User.builder()
                     .name(authorName)
@@ -125,35 +128,49 @@ public class GitUtil {
                     .date(authorDate)
                     .build();
 
-            Commit commit =
-                    Commit.builder()
+            Commit commit = Commit.builder()
+                    .author(author)
+                    .message(message)
+                    .build();
+
+            GitCommit gitCommit =
+                    GitCommit.builder()
                             .sha(sha)
-                            .author(author)
-                            .message(message)
+                            .commit(commit)
                             .build();
 
-            commitList.add(commit);
+            commitList.add(gitCommit);
         }
 
         return commitList;
     }
 
-    ProcessBuilder initialiseProcessBuilder(File execDirectoryFile, List<CommitOption> commitOptionList) {
+    ProcessBuilder initialiseGitLogProcessBuilder(String execDirectory, List<CommitOption> commitOptionList) {
         ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream(true);
-        builder.directory(execDirectoryFile);
-        builder.command(buildGitCommandList(commitOptionList));
+        builder.directory(new File(execDirectory));
+        builder.command(buildGitLogCommandList(commitOptionList));
         return builder;
     }
 
-    List<String> buildGitCommandList(List<CommitOption> commitOptionList) {
+    ProcessBuilder initialiseGitCloneProcessBuilder(String execDirectory, String gitUrl) {
+        //If execDirectory == null
+        String validExecDirectory = execDirectory == null? System.getProperty("user.dir") : execDirectory;
+        ProcessBuilder builder = new ProcessBuilder();
+        builder.redirectErrorStream(true);
+        builder.directory(new File(execDirectory));
+        builder.command(buildGitCloneCommandList(execDirectory, gitUrl));
+        return builder;
+    }
+
+    List<String> buildGitLogCommandList(List<CommitOption> commitOptionList) {
         List<String> commandList = new ArrayList<>(Arrays.asList(GIT_LOG_BASE_CMD.split(" ")));
-        String commitOptions = "";
+        StringBuilder commitOptions = new StringBuilder();
 
         if (commitOptionList == null || commitOptionList.isEmpty()) {
             log.info("No commit option specified, querying default commit data (sha, author name, author " +
                     "email, author date and message)");
-            commitOptions = buildDefaultCommitOptionString();
+            commitOptions.append(buildDefaultCommitOptionString());
 
         } else {
             List<String> commandOptionStringList = new ArrayList<>();
@@ -166,16 +183,21 @@ public class GitUtil {
                 }
             }
 
-            commitOptions = String.join(COMMIT_FIELD_DELIMITER, commandOptionStringList);
+            commitOptions.append(String.join(COMMIT_FIELD_DELIMITER, commandOptionStringList));
         }
-        String commitOptionString = String.format(GIT_LOG_PRETTY_FORMAT_BASE_CMD, commitOptions);
+        String commitOptionString = String.format(GIT_LOG_PRETTY_FORMAT_BASE_CMD, commitOptions.toString());
         commandList.add(commitOptionString);
 
         return commandList;
     }
 
+    List<String> buildGitCloneCommandList(String execDirectory, String gitUrl) {
+        return new ArrayList<>(Arrays.asList(String.format(GIT_CLONE_BASE_CMD, gitUrl, execDirectory).split(" ")));
+    }
+
     String buildDefaultCommitOptionString() {
-        return String.format("%s|%s|%s|%s|%s", COMMIT_OPTION_TAG_MAP.get(CommitOption.SHA),
+        return String.format(GIT_LOG_PRETTY_FORMAT_DEFAULT_PATTERN,
+                COMMIT_OPTION_TAG_MAP.get(CommitOption.SHA),
                 COMMIT_OPTION_TAG_MAP.get(CommitOption.AUTHOR_NAME),
                 COMMIT_OPTION_TAG_MAP.get(CommitOption.AUTHOR_EMAIL),
                 COMMIT_OPTION_TAG_MAP.get(CommitOption.AUTHOR_DATE),
@@ -210,7 +232,7 @@ public class GitUtil {
         map.put(CommitOption.COMMITTER_DATE, "%ct"); // UNIX timestamp
         map.put(CommitOption.COMMITTER_NAME, "%cn");
         map.put(CommitOption.COMMITTER_EMAIL, "%ce");
-        map.put(CommitOption.MESSAGE, "%N");
+        map.put(CommitOption.MESSAGE, "%s");
         map.put(CommitOption.TREE_SHA, "%T"); // tree.url is remote url + tree.sha
         map.put(CommitOption.PARENT_SHA, "%P"); // parent.url is remote url + parent.sha
 
@@ -218,5 +240,19 @@ public class GitUtil {
         map.put(CommitOption.VALIDATION, "%GG");
 
         return map;
+    }
+
+    public void cloneRemoteProject(String execDirectory, String gitUrl) throws ProcessExecuteFailedException {
+        ProcessBuilder processBuilder = initialiseGitCloneProcessBuilder(getValidDirectory(execDirectory), gitUrl);
+        processExecutor(processBuilder);
+    }
+
+    public String getValidDirectory(String execDirectory){
+        if(execDirectory == null || execDirectory.isEmpty()) {
+            String currentProjectDir = System.getProperty("user.dir");
+            log.info("No work directory specified, using current project directory '" + currentProjectDir + "'");
+            return currentProjectDir;
+        }
+        return execDirectory;
     }
 }

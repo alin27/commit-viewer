@@ -18,6 +18,7 @@ compose.
 5. Access the form via `http://localhost/`
 
 ## Assumptions
+* The git hub project allows cloning via https.
 * To use the git CLI, it is assumed that the user has already cloned the repository.
 * System OS is Linux
 * The MongoDB container is not configured to retain any data when it is destroyed. This can be done via volume mount 

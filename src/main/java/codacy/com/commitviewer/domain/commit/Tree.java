@@ -15,11 +15,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
  **/
 @Data
 @Builder
-@Document
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Tree {
-    private CommitAttribute url;
-    private CommitAttribute sha;
+    private String url;
+    private String sha;
 }

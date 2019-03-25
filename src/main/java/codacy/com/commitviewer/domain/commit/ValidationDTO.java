@@ -6,21 +6,22 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
- * POJO representing the 'author' and 'committer' attribute of a git commit.
+ * POJO representing the 'validation' attribute of a git commit.
  * <p>
  * Author: Amy Lin
  **/
 @Data
 @Builder
+@Document
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class User {
-    private String date;
-    private String name;
-    private String email;
+public class ValidationDTO {
+    private String verified;
+    private String reason;
+    private String signature;
+    private String payload;
 }

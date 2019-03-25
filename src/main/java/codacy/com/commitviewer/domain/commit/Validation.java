@@ -15,13 +15,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
  **/
 @Data
 @Builder
-@Document
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Validation {
-    private CommitAttribute verified;
-    private CommitAttribute reason;
-    private CommitAttribute signature;
-    private CommitAttribute payload;
+    private String verified;
+    private String reason;
+    private String signature;
+    private String payload;
 }

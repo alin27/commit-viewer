@@ -1,6 +1,8 @@
 package codacy.com.commitviewer.service;
 
 import codacy.com.commitviewer.domain.Commit;
+import codacy.com.commitviewer.domain.GitCommit;
+import codacy.com.commitviewer.exception.ProcessExecuteFailedException;
 import codacy.com.commitviewer.util.CommitOption;
 import codacy.com.commitviewer.util.GitUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +16,7 @@ import java.util.List;
 public class CommitServiceImp implements CommitService {
 
     @Override
-    public Commit buildCommit(final List<String> rawCommitData) {
+    public GitCommit buildCommit(final List<String> rawCommitData) {
         //TODO: expand to handle commit logs that returns different length
         return null;
     }
@@ -27,7 +29,7 @@ public class CommitServiceImp implements CommitService {
         try {
             rawCommitData = GitUtil.getRawCommitData(execDirectory, commitOptionList);
 
-        } catch (Exception e) {
+        } catch (ProcessExecuteFailedException e) {
 
         }
 
@@ -35,8 +37,8 @@ public class CommitServiceImp implements CommitService {
     }
 
     @Override
-    public List<Commit> buildCommitList(final String execDirectory, final List<CommitOption> commitOptionList) {
-        List<Commit> commitList = new ArrayList<>();
+    public List<GitCommit> buildCommitList(final String execDirectory, final List<CommitOption> commitOptionList) {
+        List<GitCommit> commitList = new ArrayList<>();
 
         try {
             commitList = GitUtil.buildCommitList(getRawCommitData(execDirectory, commitOptionList));

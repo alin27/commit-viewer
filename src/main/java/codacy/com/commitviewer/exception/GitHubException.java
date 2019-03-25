@@ -5,9 +5,9 @@ package codacy.com.commitviewer.exception;
  * <p>
  * Author: Amy Lin
  **/
-public class FailToExitProcessException extends Exception {
+public class GitHubException extends Exception {
 
-    public FailToExitProcessException(final String errorMessage) {
+    public GitHubException(final String errorMessage) {
         super(errorMessage);
     }
 }

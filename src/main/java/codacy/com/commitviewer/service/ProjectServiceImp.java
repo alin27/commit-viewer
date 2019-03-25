@@ -1,23 +1,24 @@
 package codacy.com.commitviewer.service;
 
 import codacy.com.commitviewer.domain.Commit;
+import codacy.com.commitviewer.domain.GetCommitsRequest;
+import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.Project;
+import codacy.com.commitviewer.exception.GitHubException;
 import codacy.com.commitviewer.exception.GitHubTimeoutException;
 import codacy.com.commitviewer.exception.ProjectNotFoundException;
 import codacy.com.commitviewer.repository.ProjectRepository;
+import codacy.com.commitviewer.util.CommitMapper;
+import codacy.com.commitviewer.util.CommitOption;
+import codacy.com.commitviewer.util.GitUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,9 +37,17 @@ public class ProjectServiceImp implements ProjectService {
      **/
     private final CommitService commitService;
 
+    /**
+     * Autowired commit service.
+     **/
+    private final GitService gitService;
+
+    private static final int TIMEOUT_IN_MILLIESECONDS = 5000;
+    private static final String GIT_HUB_URL_BASE = "https://github.com/%s/%s";
+
     @Override
     public Project createProject(final Project projectData) {
-        List<Commit> commitList = commitService.buildCommitList(projectData.getDirectory(),
+        List<GitCommit> commitList = commitService.buildCommitList(projectData.getDirectory(),
                 projectData.getCommitOptionList());
         final Project project = Project.builder()
                 .id(projectData.getId())
@@ -95,7 +104,7 @@ public class ProjectServiceImp implements ProjectService {
     }
 
     @Override
-    public List<Commit> getAllCommitsByProjectName(final String name) throws ProjectNotFoundException {
+    public List<GitCommit> getAllCommitsByProjectName(final String name) throws ProjectNotFoundException {
         final Optional<Project> gitRepository = repository.findByName(name);
         if (gitRepository.isPresent()) {
             return gitRepository.get().getCommitList();
@@ -104,73 +113,74 @@ public class ProjectServiceImp implements ProjectService {
         }
     }
 
+    /**
+     * This is the one used to get local git commits. If no database record is found it will clone the remote project
+     * into the specified work directory, get the commit list from that directory and store it in the database.
+     *
+     * @param request GetCommitRequest containing the git url, optionally list of commit options and work directory
+     * @return List of commits
+     */
     @Override
-    public List<Commit> getAllCommitsByProjectNameFromGit(final String owner, final String name) throws ProjectNotFoundException {
-        int connectionTimeout = 5000;
-//        String urlString = String.format("https://github.com/%s/%s", owner, name);
-        String urlString = String.format("https://api.github.com/users/%s/%s", owner, name);
+    public List<GitCommit> getAllCommitsFromLocal(final GetCommitsRequest request) {
+        String projectName = request.getProjectName();
+        String projectOwner = request.getProjectOwner();
+        String execDirectory = request.getExecDirectory();
+        List<CommitOption> commitOptionList = request.getCommitOptions();
 
-        try {
-            StringBuilder response = new StringBuilder();
+        try{
+            return getAllCommitsByProjectName(request.getProjectName());
+        } catch (ProjectNotFoundException e) {
+            log.info("Project does not exist in the database, cloning from remote");
 
-            HttpURLConnection con = (HttpURLConnection) new URL(urlString).openConnection();
-            con.setRequestMethod("GET");
-            con.setRequestProperty("Content-Type", "application/json");
-            con.setRequestProperty("Accept", "application/vnd.github.v3+json");
-            con.setConnectTimeout(connectionTimeout);
-            con.setReadTimeout(connectionTimeout);
+            String gitUrl = String.format(GIT_HUB_URL_BASE, projectOwner, projectName);
 
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
+            gitService.clone(execDirectory, gitUrl);
 
-                String line;
-
-                while ((line = in.readLine()) != null) {
-                    response.append(line);
-                    response.append(System.lineSeparator());
-                }
+            if(execDirectory != null ){
+                log.info("Work directory specified, cloning into '" + execDirectory + "'");
             }
 
-            if (con.getResponseCode() == HttpStatus.REQUEST_TIMEOUT.value()) {
-                throw new GitHubTimeoutException("The request has timeout");
-            }
+            List<GitCommit> commitList = commitService.buildCommitList(execDirectory, commitOptionList);
 
-            System.out.println("Response: " + response);
-            con.disconnect();
+            Project newProject = Project.builder()
+                    .name(projectName)
+                    .owner(projectOwner)
+                    .commitList(commitList)
+                    .build();
 
-        } catch (Exception e) {
-            if (e instanceof GitHubTimeoutException) {
-                log.warn("Unable to complete the request to git hub in specified time");
-            } else if (e instanceof ProtocolException | e instanceof MalformedURLException | e instanceof IOException) {
-                log.error("Unable to connect to git hub. Error: " + e.getMessage());
-            }
+            createProject(newProject);
+
+            return commitList;
+        }
+    }
+
+    /**
+     * This is the one used to get remote git commits
+     * @param request GetCommitRequest containing the git url, optionally list of commit options and work directory
+     * @return List of commits
+     */
+    @Override
+    public List<GitCommit> getAllCommitsFromGit(final GetCommitsRequest request) throws GitHubException, GitHubTimeoutException {
+        String urlString = String.format("https://api.github.com/repos/%s/%s/commits", request.getProjectOwner(), request.getProjectName());
+//        RestTemplate restTemplate = new RestTemplate(getClientHttpRequestFactory());
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.getForEntity(urlString, String.class);
+
+        if(response.getStatusCode().isError()){
+            throw new GitHubException("Unable to fetch from git hub");
         }
 
-        return new ArrayList<>();
-//        return getAllCommitsByProjectName(name);
+        // Time out
+        else if (response.getStatusCode().value() == HttpStatus.REQUEST_TIMEOUT.value()){
+            throw new GitHubTimeoutException("Request timeout");
+        }
 
-//    } catch (Exception e) {
-//            /* If (request takes > 5 mins)
-//                try {
-//                    return query DB;
-//                } catch exception {
-//                    if (ProjectNotFound) {
-//                        throw (project not found);
-//                    }
-//                }
-//
-//                else if ( 404 ) {
-//                    throw (Git endpoint not found exception);
-//                }
-//
-//                else( any other git API error) {
-//                    throw (Git API not available exception);
-//                }
-//            }
-//
-//             */
-//
-//
-//        }
-//    }
+        return CommitMapper.map(response.getBody());
     }
+
+//    private ClientHttpRequestFactory getClientHttpRequestFactory() {
+//        HttpComponentsClientHttpRequestFactory clientHttpRequestFactory = new HttpComponentsClientHttpRequestFactory();
+//        clientHttpRequestFactory.setConnectTimeout(TIMEOUT_IN_MILLIESECONDS);
+//        return clientHttpRequestFactory;
+//    }
 }
