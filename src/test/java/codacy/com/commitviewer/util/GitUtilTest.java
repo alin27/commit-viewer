@@ -80,14 +80,6 @@ public class GitUtilTest {
     }
 
     @Test
-    public void buildMkdirStringShouldBuildCorrectly(){
-        List<String> expectedCommands = Arrays.asList("mkdir", "/project");
-        List<String> testCommands = GitUtil.buildMkdirCommandList("/project");
-
-        assertEquals(expectedCommands, testCommands);
-    }
-
-    @Test
     public void test() throws ProcessExecuteFailedException {
         List<CommitOption> commandOptionList = Arrays.asList(CommitOption.SHA, CommitOption.AUTHOR_DATE);
         List<String> output = GitUtil.getRawCommitData("", commandOptionList);
