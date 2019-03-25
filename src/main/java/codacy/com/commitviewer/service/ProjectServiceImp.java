@@ -3,8 +3,6 @@ package codacy.com.commitviewer.service;
 import codacy.com.commitviewer.domain.GetCommitsRequest;
 import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.Project;
-import codacy.com.commitviewer.exception.GitHubException;
-import codacy.com.commitviewer.exception.GitHubTimeoutException;
 import codacy.com.commitviewer.exception.ProjectNotFoundException;
 import codacy.com.commitviewer.repository.ProjectRepository;
 import codacy.com.commitviewer.util.CommitMapper;
@@ -18,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,7 +39,8 @@ public class ProjectServiceImp implements ProjectService {
      **/
     private final GitService gitService;
 
-    private static final int TIMEOUT_IN_MILLIESECONDS = 5000;
+    private static final String GIT_API_GET_COMMITS_BASE_URL = "https://api.github.com/repos/%s/%s/commits";
+
 
     @Override
     public Project createProject(final Project projectData) {
@@ -58,21 +56,6 @@ public class ProjectServiceImp implements ProjectService {
     }
 
     @Override
-    public Project getProjectById(final String id) throws ProjectNotFoundException {
-        final Optional<Project> gitRepository = repository.findById(id);
-        if (gitRepository.isPresent()) {
-            return gitRepository.get();
-        } else {
-            throw new ProjectNotFoundException("Git project with id '" + id + "' is not found");
-        }
-    }
-
-    @Override
-    public void deleteProjectById(final String id) {
-        repository.deleteById(id);
-    }
-
-    @Override
     public Project getProjectByName(final String name) throws ProjectNotFoundException {
         final Optional<Project> gitRepository = repository.findByName(name);
         if (gitRepository.isPresent()) {
@@ -80,16 +63,6 @@ public class ProjectServiceImp implements ProjectService {
         } else {
             throw new ProjectNotFoundException("Git project with name '" + name + "' is not found");
         }
-    }
-
-    @Override
-    public List<Project> getProjectsByOwner(final String owner) {
-        return repository.findAllByOwner(owner);
-    }
-
-    @Override
-    public Project updateProject(final Project project) {
-        return repository.save(project);
     }
 
     @Override
@@ -112,13 +85,6 @@ public class ProjectServiceImp implements ProjectService {
         }
     }
 
-    /**
-     * This is the one used to get local git commits. If no database record is found it will clone the remote project
-     * into the specified work directory, get the commit list from that directory and store it in the database.
-     *
-     * @param request GetCommitRequest containing the git url, optionally list of commit options and work directory
-     * @return List of commits
-     */
     @Override
     public List<GitCommit> getAllCommitsFromLocal(final GetCommitsRequest request) {
         String projectName = request.getProjectName();
@@ -126,6 +92,7 @@ public class ProjectServiceImp implements ProjectService {
         String execDirectory = GitUtil.getValidDirectory(request.getExecDirectory());
         List<CommitOption> commitOptionList = request.getCommitOptions();
 
+        //TODO: Update the record in DB if the repo exists locally already
         try{
             return getAllCommitsByProjectName(request.getProjectName());
         } catch (ProjectNotFoundException e) {
@@ -150,33 +117,16 @@ public class ProjectServiceImp implements ProjectService {
         }
     }
 
-    /**
-     * This is the one used to get remote git commits
-     * @param request GetCommitRequest containing the git url, optionally list of commit options and work directory
-     * @return List of commits
-     */
     @Override
-    public List<GitCommit> getAllCommitsFromGit(final GetCommitsRequest request) throws GitHubException, GitHubTimeoutException {
-        String urlString = String.format("https://api.github.com/repos/%s/%s/commits", request.getProjectOwner(), request.getProjectName());
-//        RestTemplate restTemplate = new RestTemplate(getClientHttpRequestFactory());
+    public List<GitCommit> getAllCommitsFromGit(final GetCommitsRequest request) {
+        String urlString = String.format(GIT_API_GET_COMMITS_BASE_URL, request.getProjectOwner(), request.getProjectName());
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> response = restTemplate.getForEntity(urlString, String.class);
 
-        if(response.getStatusCode().isError()){
-            throw new GitHubException("Unable to fetch from git hub");
+        if(response.getStatusCode().isError() || response.getStatusCode() == HttpStatus.REQUEST_TIMEOUT){
+            log.error("Unable to fetch from git hub, trying to retrieve commit list locally...");
+            return getAllCommitsFromLocal(request);
         }
-
-        // Time out
-        else if (response.getStatusCode().value() == HttpStatus.REQUEST_TIMEOUT.value()){
-            throw new GitHubTimeoutException("Request timeout");
-        }
-
         return CommitMapper.map(response.getBody());
     }
-
-//    private ClientHttpRequestFactory getClientHttpRequestFactory() {
-//        HttpComponentsClientHttpRequestFactory clientHttpRequestFactory = new HttpComponentsClientHttpRequestFactory();
-//        clientHttpRequestFactory.setConnectTimeout(TIMEOUT_IN_MILLIESECONDS);
-//        return clientHttpRequestFactory;
-//    }
 }

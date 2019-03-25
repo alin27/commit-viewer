@@ -1,6 +1,5 @@
 package codacy.com.commitviewer.service;
 
-import codacy.com.commitviewer.domain.Commit;
 import codacy.com.commitviewer.domain.GetCommitsRequest;
 import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.Project;
@@ -14,25 +13,12 @@ import java.util.List;
 public interface ProjectService {
 
     /**
+     * Create a new {@link Project} with list of {@link GitCommit}.
+     *
      * @param project Git project data received from the git cli
      * @return {@link Project} with unique ID to be created in the database
      */
     Project createProject(Project project);
-
-    /**
-     * Retrieve a git project by ID from the database.
-     *
-     * @param id String unique ID of the {@link Project}
-     * @return {@link Project} with that record ID
-     */
-    Project getProjectById(String id) throws ProjectNotFoundException;
-
-    /**
-     * Delete a git project by ID from the database.
-     *
-     * @param id String unique ID of the {@link Project}
-     */
-    void deleteProjectById(String id);
 
     /**
      * Retrieve a git project by name from the database.
@@ -41,23 +27,6 @@ public interface ProjectService {
      * @return {@link Project} with that name
      */
     Project getProjectByName(String name) throws ProjectNotFoundException;
-
-    /**
-     * Retrieve a list of git projects by owner from the database.
-     *
-     * @param owner String owner of the {@link Project}
-     * @return List of {@link Project} belonged to that owner
-     */
-    List<Project> getProjectsByOwner(String owner);
-
-
-    /**
-     * Update an existing git repository with new information. In NoSQL this operation is equivalent to 'createProject'.
-     *
-     * @param project Project
-     * @return {@link Project} with unique ID to be created in the database
-     */
-    Project updateProject(Project project);
 
     /**
      * Retrieve a list of {@link Project} existing git repositories from the database.
@@ -79,11 +48,21 @@ public interface ProjectService {
      */
     List<GitCommit> getAllCommitsByProjectName(String name) throws ProjectNotFoundException;
 
+    /**
+     * Use the git CLI to get list of {@link GitCommit} of a repository locally. It first checks if there is a database
+     * record of the project using getAllCommitsByProjectName (i.e. existing project). If no database record is found
+     * it will clone the remote project into the work directory (if specified, default to the current project directory
+     * otherwise) and get the commit list from the newly cloned project directory. Finally it create a new
+     * {@link Project} the project in the database.
+     *
+     * @param request GetCommitRequest containing the git url, optionally list of commit options and work directory
+     * @return List of commits
+     */
     List<GitCommit> getAllCommitsFromLocal(GetCommitsRequest request);
 
     /**
-     * Retrieve a list of {@link GitCommit} of a project from git. If it fails, it will clone the project to the specified
-     * work directory and try get commits from the project directory.
+     * Retrieve a list of {@link GitCommit} of a project from git. If the response status is error or the request times
+     * out, retry with getAllCommitsFromLocal.
      *
      * @param request GetCommitRequest containing the git url, optionally list of commit options and work directory
      * @return List of {@link GitCommit} of the project
