@@ -4,6 +4,17 @@ services:
     image: mongo:latest
     container_name: commit-viwer-mongodb
     restart: always
-    command: --smallfiles
+    environment:
+      - MONGO_DATA_DIR=/data/db
+    command: mongod --smallfiles --logpath=/dev/null
+
+  backend-server:
+    container_name: commit-viwer-backend-server
+    build:
+      context: .
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
     ports:
-      - 27017:27017
+      - 8080:8080
+    depends_on:
+      - mongodb
