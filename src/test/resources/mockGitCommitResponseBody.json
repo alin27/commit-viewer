@@ -1,0 +1,84 @@
+[
+  {
+    "sha": "9b857238a71afa32ad27b6dc61a2d22902fb1f72",
+    "node_id": "MDY6Q29tbWl0MTI1NzkxNDY0OjliODU3MjM4YTcxYWZhMzJhZDI3YjZkYzYxYTJkMjI5MDJmYjFmNzI=",
+    "commit": {
+      "author": {
+        "name": "Amy Lin",
+        "email": "amy.lin@nzqa.govt.nz",
+        "date": "2018-03-21T23:12:53Z"
+      },
+      "committer": {
+        "name": "Amy Lin",
+        "email": "amy.lin@nzqa.govt.nz",
+        "date": "2018-03-21T23:12:53Z"
+      },
+      "message": "Remove parameter 'AvailabilityZones' when deploying into existing template.",
+      "tree": {
+        "sha": "c66f1ee2dd85ec0fb233d99165624ab1029ad55f",
+        "url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/git/trees/c66f1ee2dd85ec0fb233d99165624ab1029ad55f"
+      },
+      "url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/git/commits/9b857238a71afa32ad27b6dc61a2d22902fb1f72",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/commits/9b857238a71afa32ad27b6dc61a2d22902fb1f72",
+    "html_url": "https://github.com/alin27/aws-cloud-formation-stack-manager/commit/9b857238a71afa32ad27b6dc61a2d22902fb1f72",
+    "comments_url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/commits/9b857238a71afa32ad27b6dc61a2d22902fb1f72/comments",
+    "author": null,
+    "committer": null,
+    "parents": [
+      {
+        "sha": "32eb4b7f1dda64f7bb38567332977629b1a722f2",
+        "url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/commits/32eb4b7f1dda64f7bb38567332977629b1a722f2",
+        "html_url": "https://github.com/alin27/aws-cloud-formation-stack-manager/commit/32eb4b7f1dda64f7bb38567332977629b1a722f2"
+      }
+    ]
+  },
+  {
+    "sha": "32eb4b7f1dda64f7bb38567332977629b1a722f2",
+    "node_id": "MDY6Q29tbWl0MTI1NzkxNDY0OjMyZWI0YjdmMWRkYTY0ZjdiYjM4NTY3MzMyOTc3NjI5YjFhNzIyZjI=",
+    "commit": {
+      "author": {
+        "name": "Amy Lin",
+        "email": "amy.lin@nzqa.govt.nz",
+        "date": "2018-03-21T23:00:32Z"
+      },
+      "committer": {
+        "name": "Amy Lin",
+        "email": "amy.lin@nzqa.govt.nz",
+        "date": "2018-03-21T23:00:32Z"
+      },
+      "message": "Use array list to generate parameter arrays rather than Arrays.AsList, which generates a fixed array that can't be modified.",
+      "tree": {
+        "sha": "c0fd75250ccc5c4f7ee7421d2dfdebe7819b913c",
+        "url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/git/trees/c0fd75250ccc5c4f7ee7421d2dfdebe7819b913c"
+      },
+      "url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/git/commits/32eb4b7f1dda64f7bb38567332977629b1a722f2",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/commits/32eb4b7f1dda64f7bb38567332977629b1a722f2",
+    "html_url": "https://github.com/alin27/aws-cloud-formation-stack-manager/commit/32eb4b7f1dda64f7bb38567332977629b1a722f2",
+    "comments_url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/commits/32eb4b7f1dda64f7bb38567332977629b1a722f2/comments",
+    "author": null,
+    "committer": null,
+    "parents": [
+      {
+        "sha": "6a61f5fccbcc49ce082c0d84b1cc78b4ecb37733",
+        "url": "https://api.github.com/repos/alin27/aws-cloud-formation-stack-manager/commits/6a61f5fccbcc49ce082c0d84b1cc78b4ecb37733",
+        "html_url": "https://github.com/alin27/aws-cloud-formation-stack-manager/commit/6a61f5fccbcc49ce082c0d84b1cc78b4ecb37733"
+      }
+    ]
+  }
+]

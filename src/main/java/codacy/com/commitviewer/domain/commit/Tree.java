@@ -1,6 +1,5 @@
 package codacy.com.commitviewer.domain.commit;
 
-import codacy.com.commitviewer.domain.CommitAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +14,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
  **/
 @Data
 @Builder
+@Document
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)

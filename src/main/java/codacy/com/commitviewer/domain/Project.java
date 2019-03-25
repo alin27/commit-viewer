@@ -10,7 +10,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * POJO representing a git project. When parsed as request body in post request, the user may optionally include a list
@@ -23,6 +22,7 @@ import java.util.Optional;
  **/
 @Data
 @Builder
+@Document
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)

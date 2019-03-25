@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * POJO representing a git commit. The structure is a mirror of a commit object returned by the git API
@@ -18,6 +19,7 @@ import lombok.NoArgsConstructor;
  **/
 @Data
 @Builder
+@Document
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)

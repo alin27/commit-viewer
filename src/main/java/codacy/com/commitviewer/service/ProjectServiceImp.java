@@ -1,6 +1,5 @@
 package codacy.com.commitviewer.service;
 
-import codacy.com.commitviewer.domain.Commit;
 import codacy.com.commitviewer.domain.GetCommitsRequest;
 import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.Project;
@@ -18,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +43,6 @@ public class ProjectServiceImp implements ProjectService {
     private final GitService gitService;
 
     private static final int TIMEOUT_IN_MILLIESECONDS = 5000;
-    private static final String GIT_HUB_URL_BASE = "https://github.com/%s/%s";
 
     @Override
     public Project createProject(final Project projectData) {
@@ -124,23 +123,20 @@ public class ProjectServiceImp implements ProjectService {
     public List<GitCommit> getAllCommitsFromLocal(final GetCommitsRequest request) {
         String projectName = request.getProjectName();
         String projectOwner = request.getProjectOwner();
-        String execDirectory = request.getExecDirectory();
+        String execDirectory = GitUtil.getValidDirectory(request.getExecDirectory());
         List<CommitOption> commitOptionList = request.getCommitOptions();
 
         try{
             return getAllCommitsByProjectName(request.getProjectName());
         } catch (ProjectNotFoundException e) {
             log.info("Project does not exist in the database, cloning from remote");
-
-            String gitUrl = String.format(GIT_HUB_URL_BASE, projectOwner, projectName);
-
-            gitService.clone(execDirectory, gitUrl);
-
             if(execDirectory != null ){
                 log.info("Work directory specified, cloning into '" + execDirectory + "'");
             }
+            gitService.clone(execDirectory, projectOwner, projectName);
+            String localGitProjectDirectory = execDirectory + File.separator + projectName;
 
-            List<GitCommit> commitList = commitService.buildCommitList(execDirectory, commitOptionList);
+            List<GitCommit> commitList = commitService.buildCommitList(localGitProjectDirectory, commitOptionList);
 
             Project newProject = Project.builder()
                     .name(projectName)

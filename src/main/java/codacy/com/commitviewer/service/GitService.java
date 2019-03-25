@@ -18,9 +18,10 @@ public interface GitService {
      * Use the git CLI to clone a remote git project directory into the specified work directory.
      *
      * @param execDirectory     String path of to local git project directory
-     * @param gitUrl String remote git project url
+     * @param projectOwner String owner of the project
+     * @param projectName String name of the project
      */
-    void clone(String execDirectory, String gitUrl);
+    void clone(String execDirectory, String projectOwner, String projectName);
 
 
 }

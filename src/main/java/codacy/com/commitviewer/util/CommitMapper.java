@@ -13,8 +13,8 @@ import java.util.List;
 @Slf4j
 @UtilityClass
 public class CommitMapper {
-    ObjectMapper objectMapper = new ObjectMapper();
     public List<GitCommit> map(String responseBody){
+        ObjectMapper objectMapper = new ObjectMapper();
         List<GitCommit> commitList = new ArrayList<>();
         try {
             commitList = objectMapper.readValue(responseBody, new TypeReference<List<GitCommit>>(){});

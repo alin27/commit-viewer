@@ -65,27 +65,26 @@ public class GitUtilTest {
     //Build git clone command tests
     @Test
     public void buildGitCloneStringShouldBuildCorrectlyWhenUrlIsPresent(){
-        List<String> expectedCommands = Arrays.asList("git", "clone", "http://test-url.com");
-        List<String> testCommands = GitUtil.buildGitCloneCommandList("", "http://test-url.com");
+        List<String> expectedCommands = Arrays.asList("git", "clone", "https://github.com/owner/project", "/project");
+        List<String> testCommands = GitUtil.buildGitCloneCommandList("https://github.com/owner/project", "/project");
 
-        assertEquals(3, testCommands.size());
         assertEquals(expectedCommands, testCommands);
     }
 
     @Test
     public void buildGitCloneStringShouldBuildCorrectlyWhenExecDirAndUrlIsPresent(){
-        List<String> expectedCommands = Arrays.asList("git", "clone", "http://test-url.com", "some-directory");
-        List<String> testCommands = GitUtil.buildGitCloneCommandList("some-directory", "http://test-url.com");
+        List<String> expectedCommands = Arrays.asList("git", "clone", "https://github.com/owner/project", "some-directory/project");
+        List<String> testCommands = GitUtil.buildGitCloneCommandList("https://github.com/owner/project", "some-directory/project");
 
-        assertEquals(4, testCommands.size());
         assertEquals(expectedCommands, testCommands);
     }
 
     @Test
-    public void cloneShouldCloneFromTheUrl() throws ProcessExecuteFailedException {
-        String testUrl = "https://github.com/peavers/swordfish-service";
-        GitUtil.cloneRemoteProject(GitUtil.getValidDirectory(""), testUrl);
-        assertTrue(new File("swordfish-service").canExecute());
+    public void buildMkdirStringShouldBuildCorrectly(){
+        List<String> expectedCommands = Arrays.asList("mkdir", "/project");
+        List<String> testCommands = GitUtil.buildMkdirCommandList("/project");
+
+        assertEquals(expectedCommands, testCommands);
     }
 
     @Test

@@ -19,6 +19,8 @@ compose.
 
 ## Assumptions
 * The git hub project allows cloning via https.
+* If requesting from remote the project does not exist in the specified dir.
+* If running locally the project has been cloned.
 * To use the git CLI, it is assumed that the user has already cloned the repository.
 * System OS is Linux
 * The MongoDB container is not configured to retain any data when it is destroyed. This can be done via volume mount 

@@ -25,6 +25,8 @@ public class GitUtil {
     private static final Map<CommitOption, String> COMMIT_OPTION_TAG_MAP = buildCommitOptionTagMap();
     private static final String GIT_LOG_BASE_CMD = "git log";
     private static final String GIT_CLONE_BASE_CMD = "git clone %s %s";
+    private static final String MKDIR_BASE_CMD = "mkdir %s";
+    private static final String GIT_HUB_URL_BASE = "https://github.com/%s/%s";
     private static final String GIT_LOG_PRETTY_FORMAT_BASE_CMD = "--pretty=format:%s";
     private static final String COMMIT_FIELD_DELIMITER = ",";
     private static final String GIT_LOG_PRETTY_FORMAT_DEFAULT_PATTERN =
@@ -153,13 +155,11 @@ public class GitUtil {
         return builder;
     }
 
-    ProcessBuilder initialiseGitCloneProcessBuilder(String execDirectory, String gitUrl) {
-        //If execDirectory == null
-        String validExecDirectory = execDirectory == null? System.getProperty("user.dir") : execDirectory;
+    ProcessBuilder initialiseGitCloneProcessBuilder(String execDirectory, String gitUrl, String localProjectDirectory) {
         ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream(true);
         builder.directory(new File(execDirectory));
-        builder.command(buildGitCloneCommandList(execDirectory, gitUrl));
+        builder.command(buildGitCloneCommandList(gitUrl, localProjectDirectory));
         return builder;
     }
 
@@ -191,8 +191,14 @@ public class GitUtil {
         return commandList;
     }
 
-    List<String> buildGitCloneCommandList(String execDirectory, String gitUrl) {
-        return new ArrayList<>(Arrays.asList(String.format(GIT_CLONE_BASE_CMD, gitUrl, execDirectory).split(" ")));
+    List<String> buildGitCloneCommandList(String gitUrl, String localProjectDirectory) {
+        log.info("Cloning from '" + gitUrl + "' into " + localProjectDirectory + "...");
+        return Arrays.asList(String.format(GIT_CLONE_BASE_CMD, gitUrl, localProjectDirectory).split(" "));
+    }
+
+    List<String> buildMkdirCommandList(String localDirectory) {
+        log.info("Making a new directory '" + localDirectory + "'");
+        return Arrays.asList(String.format(MKDIR_BASE_CMD, localDirectory).split(" "));
     }
 
     String buildDefaultCommitOptionString() {
@@ -242,9 +248,18 @@ public class GitUtil {
         return map;
     }
 
-    public void cloneRemoteProject(String execDirectory, String gitUrl) throws ProcessExecuteFailedException {
-        ProcessBuilder processBuilder = initialiseGitCloneProcessBuilder(getValidDirectory(execDirectory), gitUrl);
-        processExecutor(processBuilder);
+    public void cloneRemoteProject(String execDirectory, String projectOwner, String projectName) throws ProcessExecuteFailedException {
+        String localGitProjectDirectory = getValidDirectory(execDirectory) + File.separator + projectName;
+        String gitUrl = String.format(GIT_HUB_URL_BASE, projectOwner, projectName);
+
+        if(new File(localGitProjectDirectory).mkdir()){
+            ProcessBuilder processBuilder = initialiseGitCloneProcessBuilder(getValidDirectory(execDirectory), gitUrl, localGitProjectDirectory);
+            processExecutor(processBuilder);
+        } else {
+            throw new ProcessExecuteFailedException("Unable to create new directory '" +  localGitProjectDirectory +
+                    "'. Ensure it does not exist.");
+        }
+
     }
 
     public String getValidDirectory(String execDirectory){

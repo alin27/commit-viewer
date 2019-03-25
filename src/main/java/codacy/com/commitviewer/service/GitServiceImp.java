@@ -1,6 +1,5 @@
 package codacy.com.commitviewer.service;
 
-import codacy.com.commitviewer.domain.Commit;
 import codacy.com.commitviewer.util.CommitOption;
 import codacy.com.commitviewer.util.GitUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +27,9 @@ public class GitServiceImp implements GitService {
     }
 
     @Override
-    public void clone(final String execDirectory, final String gitUrl) {
-        log.info("Cloning from '" + gitUrl + "' into " + execDirectory + "...");
+    public void clone(final String execDirectory, final String projectOwner, final String projectName) {
         try {
-            GitUtil.cloneRemoteProject(execDirectory, gitUrl);
+            GitUtil.cloneRemoteProject(execDirectory, projectOwner, projectName);
         } catch (Exception e){
 
         }

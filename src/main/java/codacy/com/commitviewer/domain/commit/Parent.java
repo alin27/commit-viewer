@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * POJO representing the 'author' and 'committer' attribute of a git commit.
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
  **/
 @Data
 @Builder
+@Document
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
