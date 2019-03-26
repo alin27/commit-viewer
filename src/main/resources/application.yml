@@ -4,11 +4,11 @@ spring:
       host: localhost
       database: commit-viwer-mongodb
 
-#---
-#spring:
-#  profiles:
-#    active: docker
-#  data:
-#    mongodb:
-#      host: mongodb
-#      database: commit-viwer-mongodb
+---
+spring:
+  profiles:
+    active: docker
+  data:
+    mongodb:
+      host: mongodb
+      database: commit-viwer-mongodb

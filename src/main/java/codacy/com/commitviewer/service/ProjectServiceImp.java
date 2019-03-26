@@ -9,12 +9,12 @@ import codacy.com.commitviewer.exception.ProjectNotFoundException;
 import codacy.com.commitviewer.repository.ProjectRepository;
 import codacy.com.commitviewer.util.CommitMapper;
 import codacy.com.commitviewer.util.CommitOption;
-import codacy.com.commitviewer.util.GitUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
@@ -121,19 +121,30 @@ public class ProjectServiceImp implements ProjectService {
     public List<GitCommit> getAllCommitsFromGit(final GetCommitsRequest request) throws Error {
         String urlString = String.format(GIT_API_GET_COMMITS_BASE_URL, request.getProjectOwner(), request.getProjectName());
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.getForEntity(urlString, String.class);
-
-        if (response.getStatusCode().isError() || response.getStatusCode() == HttpStatus.REQUEST_TIMEOUT) {
-            String errorMessage = "Unable to fetch from git hub, trying to retrieve commit list locally...";
-            log.error(errorMessage);
-            return getAllCommitsFromLocal(request);
-        }
-
         try {
+
+            ResponseEntity<String> response = restTemplate.getForEntity(urlString, String.class);
+
+            if (response.getStatusCode().isError() || response.getStatusCode() == HttpStatus.REQUEST_TIMEOUT) {
+                String errorMessage = "Unable to fetch from git hub, trying to retrieve commit list locally...";
+                log.error(errorMessage);
+                return getAllCommitsFromLocal(request);
+            }
+
             return CommitMapper.map(response.getBody());
-        } catch (IOException e) {
-            log.error("Unable to parse the response from git API.");
-            throw new Error(Error.ErrorReason.GIT_API_MALFORMED_RESPONSE);
+
+        } catch (Exception e) {
+
+            if (e instanceof HttpClientErrorException) {
+                log.error("Invalid git url. Ensure the project owner and project name is valid");
+                throw new Error(Error.ErrorReason.INVALID_GIT_URL);
+            } else if (e instanceof IOException) {
+                log.error("Unable to parse the response from git API.");
+                throw new Error(Error.ErrorReason.GIT_API_MALFORMED_RESPONSE);
+            }
         }
+
+        return null;
     }
+
 }

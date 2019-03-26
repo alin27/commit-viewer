@@ -12,6 +12,7 @@ public class Error extends RuntimeException {
         GIT_API_EXCEPTION,
         GIT_API_MALFORMED_RESPONSE,
         INVALID_PROCESS_EXECUTION_DIRECTORY,
+        INVALID_GIT_URL,
         CREATE_DIRECTORY_EXCEPTION,
         PROCESS_EXECUTION_EXCEPTION,
     }

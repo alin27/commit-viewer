@@ -1,6 +1,7 @@
 package codacy.com.commitviewer.service;
 
 import codacy.com.commitviewer.domain.Error;
+import codacy.com.commitviewer.domain.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -10,5 +11,5 @@ import org.springframework.http.ResponseEntity;
  * Author: Amy Lin
  */
 public interface ErrorService {
-    ResponseEntity constructErrorResponseView(Error e);
+    ResponseEntity<ErrorResponse> constructErrorResponseView(Error e);
 }
