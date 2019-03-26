@@ -6,8 +6,8 @@ package codacy.com.commitviewer.exception;
  * Author: Amy Lin
  **/
 public class ProjectNotFoundException extends Exception {
-
     public ProjectNotFoundException(final String errorMessage) {
         super(errorMessage);
     }
+
 }

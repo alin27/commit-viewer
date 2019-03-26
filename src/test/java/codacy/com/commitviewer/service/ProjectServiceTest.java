@@ -1,28 +1,26 @@
 package codacy.com.commitviewer.service;
 
+import codacy.com.commitviewer.domain.Error;
 import codacy.com.commitviewer.domain.GetCommitsRequest;
 import codacy.com.commitviewer.domain.GitCommit;
-import codacy.com.commitviewer.exception.GitHubException;
-import codacy.com.commitviewer.exception.GitHubTimeoutException;
+import codacy.com.commitviewer.repository.ProjectRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.IOException;
 import java.util.List;
 
 @Slf4j
-public class ProjectServiceImpTest {
+public class ProjectServiceTest {
 
-    private ProjectService projectService;
+    @MockBean
+    private ProjectRepository projectRepository;
+
+    private ProjectService projectService = new ProjectServiceImp(projectRepository, new CommitServiceImp(), new GitServiceImp());
 
     @Test
-    public void testRemote() throws GitHubException, GitHubTimeoutException, IOException {
+    public void testRemote() throws Error{
         GetCommitsRequest request = new GetCommitsRequest();
         request.setProjectName("node-github-url-from-git");
         request.setProjectOwner("tj");
@@ -32,7 +30,7 @@ public class ProjectServiceImpTest {
     }
 
     @Test
-    public void testLocal() throws GitHubException, GitHubTimeoutException, IOException {
+    public void testLocal() throws Error {
         GetCommitsRequest request = new GetCommitsRequest();
         request.setProjectName("node-github-url-from-git");
         request.setProjectOwner("tj");

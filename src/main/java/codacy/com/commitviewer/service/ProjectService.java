@@ -4,10 +4,7 @@ import codacy.com.commitviewer.domain.GetCommitsRequest;
 import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.Project;
 import codacy.com.commitviewer.exception.GitHubException;
-import codacy.com.commitviewer.exception.GitHubTimeoutException;
 import codacy.com.commitviewer.exception.ProjectNotFoundException;
-
-import java.io.IOException;
 import java.util.List;
 
 public interface ProjectService {
@@ -67,6 +64,6 @@ public interface ProjectService {
      * @param request GetCommitRequest containing the git url, optionally list of commit options and work directory
      * @return List of {@link GitCommit} of the project
      */
-    List<GitCommit> getAllCommitsFromGit(GetCommitsRequest request) throws GitHubException, GitHubTimeoutException, IOException;
+    List<GitCommit> getAllCommitsFromGit(GetCommitsRequest request) throws Error;
 
 }

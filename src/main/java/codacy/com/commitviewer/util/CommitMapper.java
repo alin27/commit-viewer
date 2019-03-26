@@ -7,22 +7,19 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Utility class that performs the mapping between the response body returned by git get commits API and list of POJO
+ * {@link GitCommit}.
+ *
+ * Author: Amy Lin
+ */
 @Slf4j
 @UtilityClass
 public class CommitMapper {
-    public List<GitCommit> map(String responseBody){
+    public List<GitCommit> map(String responseBody) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
-        List<GitCommit> commitList = new ArrayList<>();
-        try {
-            commitList = objectMapper.readValue(responseBody, new TypeReference<List<GitCommit>>(){});
-        } catch (IOException e) {
-            //TODO: exception handler
-            e.printStackTrace();
-        }
-
-        return commitList;
+        return objectMapper.readValue(responseBody, new TypeReference<List<GitCommit>>(){});
     }
 }

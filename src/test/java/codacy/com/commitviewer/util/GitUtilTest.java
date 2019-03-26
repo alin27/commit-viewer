@@ -4,7 +4,6 @@ import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.exception.ProcessExecuteFailedException;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -77,6 +76,31 @@ public class GitUtilTest {
         List<String> testCommands = GitUtil.buildGitCloneCommandList("https://github.com/owner/project", "some-directory/project");
 
         assertEquals(expectedCommands, testCommands);
+    }
+
+    @Test
+    public void validateExecDirectoryShouldThrowNoErrorForValidDir() {
+        Exception exception = null;
+        String validDir = System.getProperty("user.dir");
+        try {
+            GitUtil.validateExecDirectory(validDir);
+        } catch (Exception e) {
+            exception = e;
+        }
+        assertTrue(exception == null);
+    }
+
+
+    @Test
+    public void validateExecDirectoryShouldThrowErrorForInvalidDir() {
+        Exception exception = null;
+        String validDir = "some invalid string";
+        try {
+            GitUtil.validateExecDirectory(validDir);
+        } catch (Exception e) {
+            exception = e;
+        }
+        assertTrue(exception != null);
     }
 
     @Test

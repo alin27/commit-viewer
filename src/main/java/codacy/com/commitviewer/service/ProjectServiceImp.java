@@ -3,6 +3,8 @@ package codacy.com.commitviewer.service;
 import codacy.com.commitviewer.domain.GetCommitsRequest;
 import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.Project;
+import codacy.com.commitviewer.domain.Error;
+import codacy.com.commitviewer.exception.ProcessExecuteFailedException;
 import codacy.com.commitviewer.exception.ProjectNotFoundException;
 import codacy.com.commitviewer.repository.ProjectRepository;
 import codacy.com.commitviewer.util.CommitMapper;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +42,9 @@ public class ProjectServiceImp implements ProjectService {
      **/
     private final GitService gitService;
 
+    /**
+     * Git API end point base URL for getting commits of a repository. See https://developer.github.com/v3/repos/commits/.
+     */
     private static final String GIT_API_GET_COMMITS_BASE_URL = "https://api.github.com/repos/%s/%s/commits";
 
     @Override
@@ -58,7 +64,7 @@ public class ProjectServiceImp implements ProjectService {
         if (gitRepository.isPresent()) {
             return gitRepository.get();
         } else {
-            throw new ProjectNotFoundException("Git project with name '" + name + "' is not found");
+            throw new ProjectNotFoundException("Git project with name '" + name + "' is not found in the database.");
         }
     }
 
@@ -78,18 +84,18 @@ public class ProjectServiceImp implements ProjectService {
         if (gitRepository.isPresent()) {
             return gitRepository.get().getCommitList();
         } else {
-            throw new ProjectNotFoundException("Git project with name '" + name + "' is not found");
+            throw new ProjectNotFoundException("Git project with name '" + name + "' is not found in the database.");
         }
     }
 
     @Override
-    public List<GitCommit> getAllCommitsFromLocal(final GetCommitsRequest request) {
+    public List<GitCommit> getAllCommitsFromLocal(final GetCommitsRequest request) throws Error {
         String projectName = request.getProjectName();
         String projectOwner = request.getProjectOwner();
         String execDirectory = GitUtil.getValidDirectory(request.getExecDirectory());
         List<CommitOption> commitOptionList = request.getCommitOptions();
 
-        //TODO: Write a scheduler to loop through all records in DB to get the latest commits from git
+        //TODO: Write a scheduler to fetch and loop through all records in DB to get the latest commits from git
         try {
             return getAllCommitsByProjectName(request.getProjectName());
         } catch (ProjectNotFoundException e) {
@@ -97,33 +103,45 @@ public class ProjectServiceImp implements ProjectService {
             if (execDirectory != null) {
                 log.info("Work directory specified, cloning into '" + execDirectory + "'");
             }
-            gitService.clone(execDirectory, projectOwner, projectName);
-            String localGitProjectDirectory = execDirectory + File.separator + projectName;
 
-            List<GitCommit> commitList = commitService.buildCommitList(localGitProjectDirectory, commitOptionList);
+            try {
+                gitService.clone(execDirectory, projectOwner, projectName);
+                String localGitProjectDirectory = execDirectory + File.separator + projectName;
 
-            Project newProject = Project.builder()
-                    .name(projectName)
-                    .owner(projectOwner)
-                    .commitList(commitList)
-                    .build();
+                List<GitCommit> commitList = commitService.buildCommitList(localGitProjectDirectory, commitOptionList);
 
-            createProject(newProject);
+                Project newProject = Project.builder()
+                        .name(projectName)
+                        .owner(projectOwner)
+                        .commitList(commitList)
+                        .build();
 
-            return commitList;
+                createProject(newProject);
+
+                return commitList;
+            } catch (ProcessExecuteFailedException error) {
+                throw new Error(Error.ErrorReason.PROCESS_EXECUTION_EXCEPTION);
+            }
         }
     }
 
     @Override
-    public List<GitCommit> getAllCommitsFromGit(final GetCommitsRequest request) {
+    public List<GitCommit> getAllCommitsFromGit(final GetCommitsRequest request) throws Error {
         String urlString = String.format(GIT_API_GET_COMMITS_BASE_URL, request.getProjectOwner(), request.getProjectName());
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> response = restTemplate.getForEntity(urlString, String.class);
 
         if (response.getStatusCode().isError() || response.getStatusCode() == HttpStatus.REQUEST_TIMEOUT) {
-            log.error("Unable to fetch from git hub, trying to retrieve commit list locally...");
+            String errorMessage = "Unable to fetch from git hub, trying to retrieve commit list locally...";
+            log.error(errorMessage);
             return getAllCommitsFromLocal(request);
         }
-        return CommitMapper.map(response.getBody());
+
+        try {
+            return CommitMapper.map(response.getBody());
+        } catch (IOException e){
+            log.error("Unable to parse the response from git API.");
+            throw new Error(Error.ErrorReason.GIT_API_MALFORMED_RESPONSE);
+        }
     }
 }

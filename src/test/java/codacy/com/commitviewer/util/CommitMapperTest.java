@@ -32,7 +32,7 @@ public class CommitMapperTest {
     }
 
     @Test
-    public void shouldReturnEmptyListWhenResponseIsEmpty() {
+    public void shouldReturnEmptyListWhenResponseIsEmpty() throws IOException {
         String responseBody = "[]";
         List<GitCommit> commitList = CommitMapper.map(responseBody);
         assertEquals(0, commitList.size());

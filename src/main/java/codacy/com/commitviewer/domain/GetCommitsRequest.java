@@ -29,7 +29,6 @@ public class GetCommitsRequest {
     private String projectOwner;
     @NotNull(message="Project name cannot be missing or empty")
     private String projectName;
-    //TODO: validate work directory
     private String execDirectory;
     //TODO: validate commit option
     private List<CommitOption> commitOptions;

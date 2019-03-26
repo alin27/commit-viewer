@@ -1,9 +1,11 @@
 package codacy.com.commitviewer.controller;
 
 import codacy.com.commitviewer.domain.Commit;
+import codacy.com.commitviewer.domain.Error;
 import codacy.com.commitviewer.domain.GetCommitsRequest;
 import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.Project;
+import codacy.com.commitviewer.service.ErrorService;
 import codacy.com.commitviewer.service.ProjectService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,12 @@ public class CommitViewerController {
     private final ProjectService projectService;
 
     /**
+     * Autowired {@link Error} service.
+     **/
+    private final ErrorService errorService;
+
+
+    /**
      * Retrieve a list of {@link Project} stored in the database via a GET request.
      *
      * @return ResponseEntity with HTTP status code and list of {@link Project} in the response body
@@ -50,9 +58,9 @@ public class CommitViewerController {
     public ResponseEntity getCommitsFromLocalProject(@Valid @RequestBody final GetCommitsRequest request) {
         try {
             return new ResponseEntity<>(projectService.getAllCommitsFromLocal(request), HttpStatus.OK);
-        } catch (final Exception e) {
+        } catch (final Error e) {
             log.error("Unable to get list of commits via the endpoint '/commits'.");
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return errorService.constructErrorResponseView(e);
         }
     }
 
@@ -68,9 +76,9 @@ public class CommitViewerController {
     public ResponseEntity getCommitsFromRemoteProject(@Valid @RequestBody final GetCommitsRequest request) {
         try {
             return new ResponseEntity<>(projectService.getAllCommitsFromGit(request), HttpStatus.OK);
-        } catch (final Exception e) {
+        } catch (final Error e) {
             log.error("Unable to get list of commits via the endpoint '/commits-remote'.");
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return errorService.constructErrorResponseView(e);
         }
     }
 

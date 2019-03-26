@@ -1,6 +1,7 @@
 package codacy.com.commitviewer.util;
 
 import codacy.com.commitviewer.domain.Commit;
+import codacy.com.commitviewer.domain.Error;
 import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.commit.User;
 import codacy.com.commitviewer.exception.ProcessExecuteFailedException;
@@ -19,6 +20,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Utility class that provides interface to use git CLI.
+ *
+ * Author: Amy Lin
+ */
 @Slf4j
 @UtilityClass
 public class GitUtil {
@@ -92,8 +98,9 @@ public class GitUtil {
 
             if (!executedSuccessfully(exitCode)) {
                 String error = buildErrorStringFromStream(rawErrorStringList);
-                throw new ProcessExecuteFailedException("The process started but was unable to exit successfully (exit " +
-                        "code: " + exitCode + ". Error occurred during the process: " + error);
+                String errorMessage = "The process started but was unable to exit successfully (exit " +
+                        "code: " + exitCode + ". Error occurred during the process: " + error;
+                throw new ProcessExecuteFailedException(errorMessage);
             }
 
             log.info("Process executed successfully.");
@@ -101,26 +108,29 @@ public class GitUtil {
 
         } catch (Exception e) {
             // Thrown by opening the directory specified
+            String errorMessage;
             if (e instanceof IOException) {
-                log.error("Unable to access the execution directory specified (" + builder.directory().getName() +
-                        "), ensure the directory exits and is accessible. Error: " + e.getMessage());
-
-                //TODO: write exception in GlobalException handler?
-                throw new ProcessExecuteFailedException("IO_Exception");
+                errorMessage = "Unable to access the execution directory specified (" + builder.directory().getName() +
+                        "), ensure the directory exits and is accessible. Error: " + e.getMessage();
+                log.error(errorMessage);
+                throw new ProcessExecuteFailedException(Error.ErrorReason.PROCESS_EXECUTION_EXCEPTION, errorMessage);
             }
-
             // Thrown by 'Process.waitFor()'
             else if (e instanceof InterruptedException) {
-                log.error("The current thread is interrupted by another thread while the bash command runs. Error: " +
-                        e.getMessage());
-                throw new ProcessExecuteFailedException("InterruptedException");
-
-            } else if (e instanceof ProcessExecuteFailedException) {
-                log.error("Unable to exit the process. Error: " + e.getMessage());
-                throw new ProcessExecuteFailedException("ProcessExecuteFailedException");
+                errorMessage = "The current thread is interrupted by another thread while the bash command runs. Error: "
+                        + e.getMessage();
+                log.error(errorMessage);
+                throw new ProcessExecuteFailedException(Error.ErrorReason.PROCESS_EXECUTION_EXCEPTION, errorMessage);
+            }
+            // Thrown if process does not exit with code 0
+            else if (e instanceof ProcessExecuteFailedException) {
+                errorMessage = e.getMessage();
+                log.error(errorMessage);
+                throw new ProcessExecuteFailedException(Error.ErrorReason.PROCESS_EXECUTION_EXCEPTION, errorMessage);
             } else {
-                log.error("Unable to execute the git CLI command. Error: " + e.getMessage() + ". Skipping...");
-                throw new ProcessExecuteFailedException("Generic");
+                errorMessage = "Unable to execute the process. Error: " + e.getMessage() + ". Skipping...";
+                log.error(errorMessage);
+                throw new ProcessExecuteFailedException(Error.ErrorReason.PROCESS_EXECUTION_EXCEPTION, errorMessage);
             }
         }
         return rawDataStringList;
@@ -193,7 +203,8 @@ public class GitUtil {
      * @param commitOptionList Optional list of CommandOption for querying specific info of commits
      * @return ProcessBuilder for executing git log command
      */
-    ProcessBuilder initialiseGitLogProcessBuilder(String execDirectory, List<CommitOption> commitOptionList) {
+    ProcessBuilder initialiseGitLogProcessBuilder(String execDirectory, List<CommitOption> commitOptionList) throws ProcessExecuteFailedException {
+        validateExecDirectory(execDirectory);
         ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream(true);
         builder.directory(new File(execDirectory));
@@ -209,7 +220,9 @@ public class GitUtil {
      * @param localProjectDirectory String destination directory to clone the project into
      * @return ProcessBuilder for executing git clone command
      */
-    ProcessBuilder initialiseGitCloneProcessBuilder(String execDirectory, String gitUrl, String localProjectDirectory) {
+    ProcessBuilder initialiseGitCloneProcessBuilder(String execDirectory, String gitUrl, String localProjectDirectory) throws ProcessExecuteFailedException {
+        validateExecDirectory(execDirectory);
+        validateExecDirectory(localProjectDirectory);
         ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream(true);
         builder.directory(new File(execDirectory));
@@ -293,7 +306,7 @@ public class GitUtil {
      *
      * @return Map of CommitOption and their tags
      */
-    //TODO: expand this to keep track of order of fields and
+    //TODO: expand this to keep track of order of fields so 'buildCommitList' can build GitCommit accordingly
     Map<CommitOption, String> buildCommitOptionTagMap() {
         Map<CommitOption, String> map = new HashMap<>();
         map.put(CommitOption.SHA, "%H");
@@ -330,8 +343,9 @@ public class GitUtil {
             ProcessBuilder processBuilder = initialiseGitCloneProcessBuilder(getValidDirectory(execDirectory), gitUrl, localGitProjectDirectory);
             processExecutor(processBuilder);
         } else {
-            throw new ProcessExecuteFailedException("Unable to create new directory '" + localGitProjectDirectory +
-                    "'. Ensure it does not exist.");
+            String errorMessage = "Unable to create new directory '" + localGitProjectDirectory + "'";
+            log.error(errorMessage);
+            throw new ProcessExecuteFailedException(Error.ErrorReason.CREATE_DIRECTORY_EXCEPTION, errorMessage);
         }
 
     }
@@ -340,16 +354,31 @@ public class GitUtil {
      * Checks if the work directory passed in is valid. If it is an empty string or null, the function will return the
      * current directory as a string.
      *
-     * @param execDirectory String a valid directory that either points to an existing local git project or the
+     * @param directory String a valid directory that either points to an existing local git project or the
      *                      destination of where to clone the remote git project.
      * @return String either the execDirectory if it is not null or empty, or the current project directory as string
      */
-    public String getValidDirectory(String execDirectory) {
-        if (execDirectory == null || execDirectory.isEmpty()) {
+    public String getValidDirectory(String directory) {
+        if (directory == null || directory.isEmpty()) {
             String currentProjectDir = System.getProperty("user.dir");
             log.info("No work directory specified, using current project directory '" + currentProjectDir + "'");
             return currentProjectDir;
         }
-        return execDirectory;
+        return directory;
+    }
+
+    /**
+     * Ensure the directory is accessible.
+     *
+     * @param directory String representation of a directory
+     * @throws ProcessExecuteFailedException
+     */
+    public void validateExecDirectory(String directory) throws ProcessExecuteFailedException {
+        try{
+            File file = new File(directory);
+        } catch (Exception e) {
+            String errorMessage = "Unable to access the directory ;" + directory + "'.";
+            throw new ProcessExecuteFailedException(Error.ErrorReason.INVALID_PROCESS_EXECUTION_DIRECTORY, errorMessage);
+        }
     }
 }
