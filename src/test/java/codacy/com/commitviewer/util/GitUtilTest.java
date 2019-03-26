@@ -4,6 +4,7 @@ import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.exception.ProcessExecuteFailedException;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,14 +27,14 @@ public class GitUtilTest {
     }
 
     @Test
-    public void buildDefaultCommitOptionStringShouldReturnCorrectDefaultCommitOptionString(){
+    public void buildDefaultCommitOptionStringShouldReturnCorrectDefaultCommitOptionString() {
         // SHA | author name | author email | author date | message
         String expectedString = "%H,%an,%ae,%at,%s";
         assertEquals(expectedString, GitUtil.buildDefaultCommitOptionString());
     }
 
     @Test
-    public void buildCommitOptionStringShouldBuildCorrectlyWhenOptionsArePresent(){
+    public void buildCommitOptionStringShouldBuildCorrectlyWhenOptionsArePresent() {
         // SHA | message
         List<String> expectedCommands = Arrays.asList("git", "log", "--pretty=format:%H,%s");
         List<CommitOption> commitOptionList = Arrays.asList(CommitOption.SHA, CommitOption.MESSAGE);
@@ -42,7 +43,7 @@ public class GitUtilTest {
     }
 
     @Test
-    public void buildCommitOptionStringShouldBuildDefaultWhenNoOptionsArePresent(){
+    public void buildCommitOptionStringShouldBuildDefaultWhenNoOptionsArePresent() {
         List<String> expectedCommands = Arrays.asList("git", "log", "--pretty=format:%H,%an,%ae,%at,%s");
         List<CommitOption> commitOptionList = new ArrayList<>();
         assertEquals(3, GitUtil.buildGitLogCommandList(commitOptionList).size());
@@ -51,49 +52,23 @@ public class GitUtilTest {
 
     @Test
     public void getRawCommitDataOnThisRepoShouldExecute() throws ProcessExecuteFailedException {
-        List<String> rawCommitData = GitUtil.getRawCommitData("", null);
+        List<String> rawCommitData = GitUtil.getRawCommitData(new File(System.getProperty("user.dir")),
+                null);
         assertFalse(rawCommitData.isEmpty());
     }
 
     @Test
     public void validRawCommitDataOnThisRepoShouldConvertedIntoGitCommits() throws ProcessExecuteFailedException {
-        List<GitCommit> commitList = GitUtil.buildCommitList(GitUtil.getRawCommitData("", null));
+        List<GitCommit> commitList = GitUtil.buildCommitList(GitUtil.getRawCommitData(new File(System.getProperty
+                ("user.dir")), null));
         assertFalse(commitList.isEmpty());
     }
 
-    //Build git clone command tests
     @Test
-    public void buildGitCloneStringShouldBuildCorrectlyWhenUrlIsPresent(){
-        List<String> expectedCommands = Arrays.asList("git", "clone", "https://github.com/owner/project", "/project");
-        List<String> testCommands = GitUtil.buildGitCloneCommandList("https://github.com/owner/project", "/project");
+    public void buildGitCloneStringShouldBuildCorrectlyWhenUrlIsPresent() {
+        List<String> expectedCommands = Arrays.asList("git", "clone", "https://github.com/owner/project");
+        List<String> testCommands = GitUtil.buildGitCloneCommandList("https://github.com/owner/project");
 
         assertEquals(expectedCommands, testCommands);
-    }
-
-    @Test
-    public void buildGitCloneStringShouldBuildCorrectlyWhenExecDirAndUrlIsPresent(){
-        List<String> expectedCommands = Arrays.asList("git", "clone", "https://github.com/owner/project", "some-directory/project");
-        List<String> testCommands = GitUtil.buildGitCloneCommandList("https://github.com/owner/project", "some-directory/project");
-
-        assertEquals(expectedCommands, testCommands);
-    }
-
-    @Test
-    public void validateExecDirectoryShouldThrowNoErrorForValidDir() {
-        Exception exception = null;
-        String validDir = System.getProperty("user.dir");
-        try {
-            GitUtil.validateExecDirectory(validDir);
-        } catch (Exception e) {
-            exception = e;
-        }
-        assertTrue(exception == null);
-    }
-
-    @Test
-    public void test() throws ProcessExecuteFailedException {
-        List<CommitOption> commandOptionList = Arrays.asList(CommitOption.SHA, CommitOption.AUTHOR_DATE);
-        List<String> output = GitUtil.getRawCommitData("", commandOptionList);
-        System.out.println("Output: " + output);
     }
 }

@@ -11,13 +11,9 @@ import java.util.List;
 
 /**
  * POJO representing the request payload the user sends to the {@link CommitViewerController} to query list of commits.
- * It may optionally include -
- *      1. a list of {@link CommitOption} for querying specific information about the commits. If the
- *      option is present, it will be queried when the git CLI is run. See {@link CommitOption} for the full list of
- *      available options. An example of {@link CommitOption}: [ SHA, URL, AUTHOR_EMAIL, AUTHOR_DATE, MESSAGE...].
- *
- *      2. a work directory. This is where the project will be cloned into, or where the git CLI will be run. If it is
- *      not specified it will be defaulted to the current project directory.
+ * It may optionally include a list of {@link CommitOption} for querying specific information about the commits. If the
+ * option is present, it will be queried when the git CLI is run. See {@link CommitOption} for the full list of
+ * available options. An example of {@link CommitOption}: [ SHA, URL, AUTHOR_EMAIL, AUTHOR_DATE, MESSAGE...].
  *
  *  Author: Amy Lin
  */
@@ -29,7 +25,5 @@ public class GetCommitsRequest {
     private String projectOwner;
     @NotNull(message="Project name cannot be missing or empty")
     private String projectName;
-    private String execDirectory;
-    //TODO: validate commit option
     private List<CommitOption> commitOptions;
 }

@@ -1,9 +1,9 @@
 package codacy.com.commitviewer.service;
 
+import codacy.com.commitviewer.domain.Error;
 import codacy.com.commitviewer.domain.GetCommitsRequest;
 import codacy.com.commitviewer.domain.GitCommit;
 import codacy.com.commitviewer.domain.Project;
-import codacy.com.commitviewer.domain.Error;
 import codacy.com.commitviewer.exception.ProcessExecuteFailedException;
 import codacy.com.commitviewer.exception.ProjectNotFoundException;
 import codacy.com.commitviewer.repository.ProjectRepository;
@@ -92,23 +92,15 @@ public class ProjectServiceImp implements ProjectService {
     public List<GitCommit> getAllCommitsFromLocal(final GetCommitsRequest request) throws Error {
         String projectName = request.getProjectName();
         String projectOwner = request.getProjectOwner();
-        String execDirectory = GitUtil.getValidDirectory(request.getExecDirectory());
         List<CommitOption> commitOptionList = request.getCommitOptions();
 
-        //TODO: Write a scheduler to fetch and loop through all records in DB to get the latest commits from git
         try {
             return getAllCommitsByProjectName(request.getProjectName());
         } catch (ProjectNotFoundException e) {
             log.info("Project does not exist in the database, cloning from remote");
-            if (execDirectory != null) {
-                log.info("Work directory specified, cloning into '" + execDirectory + "'");
-            }
-
             try {
-                gitService.clone(execDirectory, projectOwner, projectName);
-                String localGitProjectDirectory = execDirectory + File.separator + projectName;
-
-                List<GitCommit> commitList = commitService.buildCommitList(localGitProjectDirectory, commitOptionList);
+                File localProjectDirectory = gitService.clone(projectOwner, projectName);
+                List<GitCommit> commitList = commitService.buildCommitList(localProjectDirectory, commitOptionList);
 
                 Project newProject = Project.builder()
                         .name(projectName)
@@ -139,7 +131,7 @@ public class ProjectServiceImp implements ProjectService {
 
         try {
             return CommitMapper.map(response.getBody());
-        } catch (IOException e){
+        } catch (IOException e) {
             log.error("Unable to parse the response from git API.");
             throw new Error(Error.ErrorReason.GIT_API_MALFORMED_RESPONSE);
         }

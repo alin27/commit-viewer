@@ -14,6 +14,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,7 +24,7 @@ import java.util.Map;
 
 /**
  * Utility class that provides interface to use git CLI.
- *
+ * <p>
  * Author: Amy Lin
  */
 @Slf4j
@@ -38,7 +40,7 @@ public class GitUtil {
      * List of base git commands and parameters, tags are replaced with string values when called in functions.
      */
     private static final String GIT_LOG_BASE_CMD = "git log";
-    private static final String GIT_CLONE_BASE_CMD = "git clone %s %s";
+    private static final String GIT_CLONE_BASE_CMD = "git clone %s";
     private static final String GIT_HUB_URL_BASE = "https://github.com/%s/%s";
     private static final String GIT_LOG_PRETTY_FORMAT_BASE_CMD = "--pretty=format:%s";
     private static final String COMMIT_FIELD_DELIMITER = ",";
@@ -53,17 +55,15 @@ public class GitUtil {
      * Used by {@link CommitService} to get a list of raw commit data as string. The function takes a list of
      * {@link CommitOption} and a work directory to use the git CLI to get the list of commits as string.
      *
-     * @param execDirectory    String a valid directory that either points to an existing local git project or the
-     *                         destination of where to clone the remote git project. Default to current work directory if
-     *                         not specified.
-     * @param commitOptionList List of {@link CommitOption} used with git CLI to query specific information about the
-     *                         commits. Default to query sha, author name, author email, author date and message if not
-     *                         specified.
+     * @param execDirectoryFile File temp directory that is created for cloning the remote git project.
+     * @param commitOptionList  List of {@link CommitOption} used with git CLI to query specific information about the
+     *                          commits. Default to query sha, author name, author email, author date and message if not
+     *                          specified.
      * @return processExecutor with the process builder as an input and execute the process.
      * @throws ProcessExecuteFailedException
      */
-    public List<String> getRawCommitData(String execDirectory, List<CommitOption> commitOptionList) throws ProcessExecuteFailedException {
-        ProcessBuilder builder = initialiseGitLogProcessBuilder(getValidDirectory(execDirectory), commitOptionList);
+    public List<String> getRawCommitData(File execDirectoryFile, List<CommitOption> commitOptionList) throws ProcessExecuteFailedException {
+        ProcessBuilder builder = initialiseGitLogProcessBuilder(execDirectoryFile, commitOptionList);
         return processExecutor(builder);
     }
 
@@ -159,7 +159,6 @@ public class GitUtil {
      * @param rawCommitData List of strings representing raw commit data
      * @return List of GitCommit
      */
-    //TODO: expand this to map other fields of GitCommit
     public List<GitCommit> buildCommitList(List<String> rawCommitData) {
         List<GitCommit> commitList = new ArrayList<>();
         for (String commitData : rawCommitData) {
@@ -199,15 +198,15 @@ public class GitUtil {
     /**
      * Initialise the process builder for getting the commits using git CLI.
      *
-     * @param execDirectory String where the process should be executed / location of the local git project.
-     * @param commitOptionList Optional list of CommandOption for querying specific info of commits
+     * @param execDirectoryFile File temp directory that is created for cloning the remote git project, where the
+     *                          process should be executed.
+     * @param commitOptionList  Optional list of CommandOption for querying specific info of commits
      * @return ProcessBuilder for executing git log command
      */
-    ProcessBuilder initialiseGitLogProcessBuilder(String execDirectory, List<CommitOption> commitOptionList) throws ProcessExecuteFailedException {
-        validateExecDirectory(execDirectory);
+    ProcessBuilder initialiseGitLogProcessBuilder(File execDirectoryFile, List<CommitOption> commitOptionList) {
         ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream(true);
-        builder.directory(new File(execDirectory));
+        builder.directory(execDirectoryFile); // Google how to get the filesystem tmp directory, place it in here. Something like System.getEnv("sysgtem.temp.dir:)
         builder.command(buildGitLogCommandList(commitOptionList));
         return builder;
     }
@@ -215,18 +214,16 @@ public class GitUtil {
     /**
      * Initialise the process builder for cloning the remote project using git CLI.
      *
-     * @param execDirectory String where the process should be executed
-     * @param gitUrl String git URL of the project
-     * @param localProjectDirectory String destination directory to clone the project into
+     * @param execDirectoryFile File temp directory that is created for cloning the remote git project, where the
+     *                          process should be executed.
+     * @param gitUrl            String git URL of the project
      * @return ProcessBuilder for executing git clone command
      */
-    ProcessBuilder initialiseGitCloneProcessBuilder(String execDirectory, String gitUrl, String localProjectDirectory) throws ProcessExecuteFailedException {
-        validateExecDirectory(execDirectory);
-        validateExecDirectory(localProjectDirectory);
+    ProcessBuilder initialiseGitCloneProcessBuilder(File execDirectoryFile, String gitUrl) {
         ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream(true);
-        builder.directory(new File(execDirectory));
-        builder.command(buildGitCloneCommandList(gitUrl, localProjectDirectory));
+        builder.directory(execDirectoryFile);
+        builder.command(buildGitCloneCommandList(gitUrl));
         return builder;
     }
 
@@ -270,9 +267,9 @@ public class GitUtil {
      *
      * @return List of strings representing 'git clone <git url> <destination directory>'.
      */
-    List<String> buildGitCloneCommandList(String gitUrl, String localProjectDirectory) {
-        log.info("Cloning from '" + gitUrl + "' into " + localProjectDirectory + "...");
-        return Arrays.asList(String.format(GIT_CLONE_BASE_CMD, gitUrl, localProjectDirectory).split(" "));
+    List<String> buildGitCloneCommandList(String gitUrl) {
+        log.info("Cloning from '" + gitUrl + "'...");
+        return Arrays.asList(String.format(GIT_CLONE_BASE_CMD, gitUrl).split(" "));
     }
 
     /**
@@ -306,7 +303,6 @@ public class GitUtil {
      *
      * @return Map of CommitOption and their tags
      */
-    //TODO: expand this to keep track of order of fields so 'buildCommitList' can build GitCommit accordingly
     Map<CommitOption, String> buildCommitOptionTagMap() {
         Map<CommitOption, String> map = new HashMap<>();
         map.put(CommitOption.SHA, "%H");
@@ -325,60 +321,28 @@ public class GitUtil {
     }
 
     /**
-     * Used by {@link ProjectService} to clone a remote git project. The function takes a valid work directory and
-     * creates an empty directory, then construct the git project URL based on the project owner and project name
-     * and finally clones the remote project into the newly created directory using git CLI.
+     * Used by {@link ProjectService} to clone a remote git project. The function creates a temp work directory then
+     * construct the git project URL based on the project owner and project name and finally clones the remote project
+     * into the newly created directory using git CLI.
      *
-     * @param execDirectory String a valid directory that points to the destination of where to clone the remote git
-     *                      project
-     * @param projectOwner  String name of git project owner
-     * @param projectName   String name of git project
+     * @param projectOwner String name of git project owner
+     * @param projectName  String name of git project
+     * @return File local directory of the cloned project
      * @throws ProcessExecuteFailedException
      */
-    public void cloneRemoteProject(String execDirectory, String projectOwner, String projectName) throws ProcessExecuteFailedException {
-        String localGitProjectDirectory = getValidDirectory(execDirectory) + File.separator + projectName;
+    public File cloneRemoteProject(String projectOwner, String projectName) throws ProcessExecuteFailedException {
         String gitUrl = String.format(GIT_HUB_URL_BASE, projectOwner, projectName);
 
-        if (new File(localGitProjectDirectory).mkdir()) {
-            ProcessBuilder processBuilder = initialiseGitCloneProcessBuilder(getValidDirectory(execDirectory), gitUrl, localGitProjectDirectory);
+        try {
+            Path execDirPath = Files.createTempDirectory("");
+            log.info("Creating the temporary folder '" + execDirPath.toAbsolutePath() + "'");
+            ProcessBuilder processBuilder = initialiseGitCloneProcessBuilder(execDirPath.toFile(), gitUrl);
             processExecutor(processBuilder);
-        } else {
-            String errorMessage = "Unable to create new directory '" + localGitProjectDirectory + "'";
-            log.error(errorMessage);
-            throw new ProcessExecuteFailedException(Error.ErrorReason.CREATE_DIRECTORY_EXCEPTION, errorMessage);
-        }
+            return execDirPath.toFile();
 
-    }
-
-    /**
-     * Checks if the work directory passed in is valid. If it is an empty string or null, the function will return the
-     * current directory as a string.
-     *
-     * @param directory String a valid directory that either points to an existing local git project or the
-     *                      destination of where to clone the remote git project.
-     * @return String either the execDirectory if it is not null or empty, or the current project directory as string
-     */
-    public String getValidDirectory(String directory) {
-        if (directory == null || directory.isEmpty()) {
-            String currentProjectDir = System.getProperty("user.dir");
-            log.info("No work directory specified, using current project directory '" + currentProjectDir + "'");
-            return currentProjectDir;
-        }
-        return directory;
-    }
-
-    /**
-     * Ensure the directory is accessible.
-     *
-     * @param directory String representation of a directory
-     * @throws ProcessExecuteFailedException
-     */
-    public void validateExecDirectory(String directory) throws ProcessExecuteFailedException {
-        try{
-            File file = new File(directory);
-        } catch (Exception e) {
-            String errorMessage = "Unable to access the directory ;" + directory + "'.";
-            throw new ProcessExecuteFailedException(Error.ErrorReason.INVALID_PROCESS_EXECUTION_DIRECTORY, errorMessage);
+        } catch (IOException e) {
+            throw new ProcessExecuteFailedException(Error.ErrorReason.CREATE_DIRECTORY_EXCEPTION, "Unable to create tmp " +
+                    "folder");
         }
     }
 }

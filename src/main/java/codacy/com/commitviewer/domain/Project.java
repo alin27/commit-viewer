@@ -26,6 +26,5 @@ public class Project {
     private String id;
     private String owner;
     private String name;
-    private String execDirectory;
     private List<GitCommit> commitList;
 }

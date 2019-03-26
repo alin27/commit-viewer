@@ -7,14 +7,16 @@ services:
     environment:
       - MONGO_DATA_DIR=/data/db
     command: mongod --smallfiles --logpath=/dev/null
-
-  backend-server:
-    container_name: commit-viwer-backend-server
-    build:
-      context: .
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
     ports:
-      - 8080:8080
-    depends_on:
-      - mongodb
+      - 27017:27017
+
+#  backend-server:
+#    container_name: commit-viwer-backend-server
+#    build:
+#      context: .
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    ports:
+#      - 8080:8080
+#    depends_on:
+#      - mongodb
