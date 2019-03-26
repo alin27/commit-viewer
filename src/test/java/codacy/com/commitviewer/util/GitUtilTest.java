@@ -28,14 +28,14 @@ public class GitUtilTest {
     @Test
     public void buildDefaultCommitOptionStringShouldReturnCorrectDefaultCommitOptionString(){
         // SHA | author name | author email | author date | message
-        String expectedString = "%H,%an,%ae,%at,%N";
+        String expectedString = "%H,%an,%ae,%at,%s";
         assertEquals(expectedString, GitUtil.buildDefaultCommitOptionString());
     }
 
     @Test
     public void buildCommitOptionStringShouldBuildCorrectlyWhenOptionsArePresent(){
         // SHA | message
-        List<String> expectedCommands = Arrays.asList("git", "log", "--pretty=format:%H,%N");
+        List<String> expectedCommands = Arrays.asList("git", "log", "--pretty=format:%H,%s");
         List<CommitOption> commitOptionList = Arrays.asList(CommitOption.SHA, CommitOption.MESSAGE);
         assertEquals(3, GitUtil.buildGitLogCommandList(commitOptionList).size());
         assertEquals(expectedCommands, GitUtil.buildGitLogCommandList(commitOptionList));
@@ -88,19 +88,6 @@ public class GitUtilTest {
             exception = e;
         }
         assertTrue(exception == null);
-    }
-
-
-    @Test
-    public void validateExecDirectoryShouldThrowErrorForInvalidDir() {
-        Exception exception = null;
-        String validDir = "some invalid string";
-        try {
-            GitUtil.validateExecDirectory(validDir);
-        } catch (Exception e) {
-            exception = e;
-        }
-        assertTrue(exception != null);
     }
 
     @Test
