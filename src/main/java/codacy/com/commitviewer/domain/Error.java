@@ -2,8 +2,10 @@ package codacy.com.commitviewer.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class Error extends RuntimeException {
     private ErrorReason errorReason;

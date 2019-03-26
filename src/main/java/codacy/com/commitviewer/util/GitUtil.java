@@ -336,9 +336,10 @@ public class GitUtil {
         try {
             Path execDirPath = Files.createTempDirectory("");
             log.info("Creating the temporary folder '" + execDirPath.toAbsolutePath() + "'");
-            ProcessBuilder processBuilder = initialiseGitCloneProcessBuilder(execDirPath.toFile(), gitUrl);
+            ProcessBuilder processBuilder = initialiseGitCloneProcessBuilder(execDirPath.toAbsolutePath().toFile(), gitUrl);
             processExecutor(processBuilder);
-            return execDirPath.resolve(projectName).toFile();
+            log.info("Clone directory: " + execDirPath.toAbsolutePath().resolve(projectName).toAbsolutePath());
+            return execDirPath.toAbsolutePath().resolve(projectName).toAbsolutePath().toFile();
 
         } catch (IOException e) {
             throw new ProcessExecuteFailedException(Error.ErrorReason.CREATE_DIRECTORY_EXCEPTION, "Unable to create tmp " +

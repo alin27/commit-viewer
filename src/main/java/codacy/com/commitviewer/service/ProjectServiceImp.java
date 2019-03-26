@@ -134,12 +134,14 @@ public class ProjectServiceImp implements ProjectService {
             return CommitMapper.map(response.getBody());
 
         } catch (Exception e) {
-
+            String errorMessage;
             if (e instanceof HttpClientErrorException) {
-                log.error("Invalid git url. Ensure the project owner and project name is valid");
+                errorMessage = "Invalid git url. Ensure the project owner and project name is valid";
+                log.error(errorMessage);
                 throw new Error(Error.ErrorReason.INVALID_GIT_URL);
             } else if (e instanceof IOException) {
-                log.error("Unable to parse the response from git API.");
+                errorMessage = "Unable to parse the response from git API";
+                log.error(errorMessage);
                 throw new Error(Error.ErrorReason.GIT_API_MALFORMED_RESPONSE);
             }
         }

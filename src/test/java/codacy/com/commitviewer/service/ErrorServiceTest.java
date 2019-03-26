@@ -42,7 +42,7 @@ public class ErrorServiceTest {
     }
 
     @Test
-    public void shouldReturnServiceNotAvailableWhenErrorIsGitApiMalformedREsponse(){
+    public void shouldReturnServiceNotAvailableWhenErrorIsGitApiMalformedResponse(){
         Error e = new Error(Error.ErrorReason.GIT_API_MALFORMED_RESPONSE);
         ResponseEntity response = errorService.constructErrorResponseView(e);
         assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());

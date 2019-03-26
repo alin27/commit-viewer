@@ -2,14 +2,14 @@ version: '3.2'
 services:
   mongodb:
     image: mongo:latest
-    container_name: commit-viwer-mongodb
+    container_name: commit-viewer-mongodb
     restart: always
     environment:
       - MONGO_DATA_DIR=/data/db
     command: mongod --smallfiles --logpath=/dev/null
 
   backend-server:
-    container_name: commit-viwer-backend-server
+    container_name: commit-viewer-backend-server
     build:
       context: .
     environment:

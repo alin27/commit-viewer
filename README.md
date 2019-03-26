@@ -27,6 +27,10 @@ to get commits
 * Using git API`http://localhost:8080/commits-remote`, or
 * Cloning the project into a temp folder and use git CLI `http://localhost:8080/commits`
 
+To retest cloning when calling `/commits`, use DELETE `/projects` endpoint to wipe the database and recall `/commits`.
+To check the app log, run `docker logs commit-viewer-backend-server`. To check the database log, run 
+`docker logs commit-viewer-mongodb`.
+
 ## Assumptions
 * The git hub project allows cloning via https.
 * The first time the user calls `/commits`, it will clone the remote project and get a list of commits using git CLI and
@@ -35,6 +39,7 @@ store it in the database. From then on whenever the user calls `/commits` it wil
 in the docker-compose file should it be necessary.
 
 ## Future enhancements
+* Install 
 * Allow the user to pass in a local project directory and execute get commits from that directory first before cloning.
 * Implement the complete git commit object model so every detail of a commit can be stored. As a result, when the user 
 passes in options of CLI to query specific information about the commits (e.g. `--pretty=oneline` or 
